@@ -1,0 +1,69 @@
+version: "3"
+services:
+  front:
+    image: node:14.15.4-buster-slim
+    container_name: front-container
+    hostname: front-container
+    volumes:
+      - ./front:/usr/src
+      - front_modules:/usr/src/node_modules #node_modulesはコンテナ内部で用意します
+    working_dir: "/usr/src"
+    command: sh -c "yarn install && yarn start"
+    ports:
+      - "4000:4000"
+    environment:
+      REACT_APP_SERVER_URL: "http://localhost:3000"
+  api:
+    image: node:14.15.4-buster-slim
+    container_name: api-container
+    hostname: api-container
+    volumes:
+      - ./api/:/usr/src/
+      - api_modules:/usr/src/node_modules #node_modulesはコンテナ内部で用意します
+    working_dir: "/usr/src"
+    ports:
+      - "3000:3000"
+    environment:
+      TZ: "Asia/Tokyo"
+      RDS_HOSTNAME: "db"
+      RDS_USERNAME: "root"
+      RDS_PASSWORD: "docker"
+      RDS_DB_NAME: "mydb"
+      # RDS_HOSTNAME: "database-1.ccpa8wimqepc.ap-northeast-1.rds.amazonaws.com"
+      # RDS_USERNAME: "admin"
+      # RDS_PASSWORD: "mriz1112"
+      # RDS_DB_NAME: "mydb"
+      #https://ap-northeast-1.console.aws.amazon.com/rds/home?region=ap-northeast-1#dbinstances:id=aamhypdnk5fpnb
+      CLIENT_ORIGIN_URL: "http://localhost:4000"
+    command: sh -c "yarn install && yarn dev"
+    depends_on:
+      - db
+  db:
+    image: mysql:8
+    container_name: db-container
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: docker
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./db/data:/var/lib/mysql #データ永続化
+      - ./db/sql:/docker-entrypoint-initdb.d #起動時sqlフォルダ内のsqlファイルを実行
+  # compose up しないとphpmyadminに入れない(理由不明)
+  phpmyadmin:
+    image: phpmyadmin #fpmやalpineタグは別途httpサーバが必要
+    container_name: phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=docker
+    ports:
+      - 8080:80
+    volumes:
+      - "./phpmyadmin:/sessions"
+    depends_on:
+      - db
+volumes:
+  front_modules:
+  api_modules:
