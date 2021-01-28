@@ -2,7 +2,7 @@ import React from "react";
 import { Link, Route } from "react-router-dom";
 import Index from "./views/Index";
 import { Nav, Navbar, Image } from "react-bootstrap";
-import MyPage from "./views/MyPage";
+import Search from "./views/Search";
 import { Auth0ContextInterface, withAuth0 } from "@auth0/auth0-react";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginButton from "./components/LoginButton";
@@ -20,7 +20,7 @@ class App extends React.Component<Props, {}> {
         <Navbar bg="light" expand="sm">
           <Navbar.Brand>
             <Link to="/" className="h2">
-              Specific Site Observer
+              Shizudaisei Finder 2
             </Link>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -52,7 +52,7 @@ class App extends React.Component<Props, {}> {
           </Navbar.Collapse>
         </Navbar>
         <Route exact path="/" component={Index}></Route>
-        <ProtectedRoute path="/mypage" component={MyPage}></ProtectedRoute>
+        <ProtectedRoute path="/search" component={Search}></ProtectedRoute>
       </>
     );
   }
