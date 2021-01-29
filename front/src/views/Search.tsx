@@ -1,331 +1,145 @@
 import React from "react";
-import {
-  Button,
-  Card,
-  CardDeck,
-  Col,
-  Container,
-  Form,
-  FormControl,
-  Modal,
-  Row,
-} from "react-bootstrap";
-import axios from "axios";
 import { Auth0ContextInterface, withAuth0 } from "@auth0/auth0-react";
-import dayjs from "dayjs";
+import { Button, Container, Form, Row } from "react-bootstrap";
+import { Col } from "react-bootstrap";
+import User from "../utils/User";
+import UserCard from "../components/UserCard";
+import axios from "axios";
+import update from "react-addons-update";
 
-type Subscription = {
-  name: string;
-  url: string;
-  title: string;
-  img: string;
-  updated: string;
-  rating: number;
-  has_new: boolean;
+type Prop = {
+  auth0: Auth0ContextInterface;
 };
 type State = {
-  subscriptions: Subscription[];
-  showModal: boolean;
-  newCardUrl: string;
-  newCardRate: number;
-};
-type Props = {
-  auth0: Auth0ContextInterface;
+  users: User[];
+  from: string;
+  to: string;
+  incl_flw: boolean;
+  excl_kws: string[];
 };
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
-const AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE;
-if (!(SERVER_URL && AUDIENCE)) new Error("env invalid");
+// const AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE;
+// if (!(SERVER_URL && AUDIENCE)) new Error("env invalid");
 
-class MyPage extends React.Component<Props, State> {
-  state = {
-    subscriptions: new Array<Subscription>(),
-    showModal: false,
-    newCardUrl: "",
-    newCardRate: 0,
-  };
+class Search extends React.Component<Prop, State> {
+  private excl_kws = ["人文社会科学部", "教育学部", "理学部", "農学部", "情報学部", "工学部"];
+  state = { users: new Array<User>(), from: "", to: "", incl_flw: false, excl_kws: this.excl_kws };
 
-  componentWillMount() {
-    this.getSubscriptions();
-  }
-
-  private async getSubscriptions() {
-    const token = await this.props.auth0.getAccessTokenSilently({
-      audience: AUDIENCE,
-    });
+  private async search() {
+    const token = await this.props.auth0.getAccessTokenSilently();
     axios
-      .get(`${SERVER_URL}/api/subscriptions`, {
+      .get(`${SERVER_URL}/users/search`, {
+        params: {
+          from: this.state.from,
+          to: this.state.to,
+          incl_flw: this.state.incl_flw,
+          excl_kws: this.state.excl_kws,
+        },
         headers: {
           authorization: `Bearer ${token}`,
         },
       })
-      .then((res) => this.setState({ subscriptions: res.data }))
+      .then((res) => this.setState({ users: res.data }))
       .catch((err) => console.log(err));
   }
 
-  private onClickAdd() {
-    this.setState({ showModal: true });
-  }
-
-  private isValidUrl(url: string) {
-    try {
-      new URL(url);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  private async addSubscription() {
-    if (!this.isValidUrl(this.state.newCardUrl)) return;
-    const token = await this.props.auth0.getAccessTokenSilently({
-      audience: AUDIENCE,
-    });
-    this.handleClose();
+  private async follow(user: User) {
+    const token = await this.props.auth0.getAccessTokenSilently();
     axios
-      .post(
-        `${SERVER_URL}/api/subscriptions`,
-        {
-          url: this.state.newCardUrl,
-          star: this.state.newCardRate,
+      .post(`${SERVER_URL}/users/follow`, {
+        body: { user_id: user.id },
+        headers: {
+          authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .then(() => {
-        this.getSubscriptions();
       })
-      .catch((err) => console.log(err));
-  }
-  private handleClose() {
-    this.setState({ showModal: false });
-  }
-
-  //既読未読を切り替える
-  private async switchRead(index: number, has_new: boolean) {
-    const token = await this.props.auth0.getAccessTokenSilently({
-      audience: AUDIENCE,
-    });
-    axios
-      .post(
-        `${SERVER_URL}/api/subscriptions/new/`,
-        {
-          url: this.state.subscriptions[index].url,
-          has_new: has_new,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .then(() => {
-        const subscriptions = this.state.subscriptions.slice();
-        subscriptions[index].has_new = has_new;
-        this.setState({
-          subscriptions: subscriptions,
-        });
-      })
-      .catch((err) => console.log(err));
-  }
-
-  //新着ありがクリックされたときは、既読に変更する
-  private onClickNew(index: number) {
-    this.switchRead(index, false);
-  }
-
-  //既読がクリックされたときは、新着に変更する
-  private onClickRead(index: number) {
-    this.switchRead(index, true);
-  }
-
-  //購読を削除する
-  private async onClickDelete(index: number) {
-    if (!window.confirm("本当に削除しますか?")) return;
-    const token = await this.props.auth0.getAccessTokenSilently({
-      audience: AUDIENCE,
-    });
-    axios
-      .post(
-        `${SERVER_URL}/api/subscriptions/delete`,
-        {
-          url: this.state.subscriptions[index].url,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
-      )
       .then(() =>
         this.setState({
-          subscriptions: this.state.subscriptions.filter(
-            (subscription) =>
-              subscription.url !== this.state.subscriptions[index].url
-          ),
+          users: this.state.users.map((user2) => {
+            if (user2 !== user) return user2;
+            user2.is_following = true;
+            return user2;
+          }),
         })
-      )
-      .catch((err) => console.log(err));
-  }
-
-  private onNewCardUrlChange(
-    e: React.ChangeEvent<typeof FormControl & HTMLInputElement>
-  ) {
-    this.setState({ newCardUrl: e.target.value });
-  }
-  private onNewCardRateChange(rate: number) {
-    this.setState({ newCardRate: rate });
-  }
-
-  private async onRateChange(index: number, rate: number) {
-    const token = await this.props.auth0.getAccessTokenSilently({
-      audience: AUDIENCE,
-    });
-    axios
-      .post(
-        `${SERVER_URL}/api/subscriptions/rank/`,
-        {
-          url: this.state.subscriptions[index].url,
-          rank: rate,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .then(() => {
-        // console.log(this.state.subscriptions[index].title, rate);
-      })
-      .catch((err) => console.log(err));
+      );
   }
 
   render() {
     return (
-      <React.Fragment>
-        <Container className="my-4">
-          <Row>
-            <Col xs={"auto"}>
-              <h1>マイページ</h1>
-            </Col>
-            <Col xs={"auto"} className="ml-auto">
-              <Button size="lg" onClick={this.onClickAdd.bind(this)}>
-                <Row noGutters>
-                  <Col xs={"auto"} className="mr-2">
-                    <FontAwesomeIcon icon={faPlusSquare} />
-                  </Col>
-                  <Col xs={"auto"}>ウォッチャカードを追加</Col>
-                </Row>
+      <>
+        <Container className="my-3">
+          <h1>検索条件</h1>
+          <Form className="my-3">
+            <Form.Row className="mb-2">
+              <Col>
+                <Form.Control type="date" placeholder="Jane Doe" />
+              </Col>
+              <Form.Label className="mx-3">から</Form.Label>
+              <Col>
+                <Form.Control type="date" placeholder="Jane Doe" />
+              </Col>
+              <Form.Label className="ml-3 mr-4">まで</Form.Label>
+              <Form.Check id="incl_flw" inline type="checkbox" label="フォローしている人を含む" />
+            </Form.Row>
+            <Form.Row className="d-flex justify-content-between">
+              <Form.Label>学部</Form.Label>
+              {this.excl_kws.map((kw) => {
+                return (
+                  <Form.Check
+                    key={kw}
+                    id={"excl_flw" + kw}
+                    inline
+                    type="checkbox"
+                    label={kw}
+                    checked={this.state.excl_kws.includes(kw)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      if (this.state.excl_kws.includes(kw))
+                        this.setState({
+                          excl_kws: this.state.excl_kws.filter((kwd) => kwd !== kw),
+                        });
+                      else {
+                        const excl_kws = this.state.excl_kws.slice();
+                        excl_kws.push(kw);
+                        this.setState({
+                          excl_kws: excl_kws,
+                        });
+                      }
+                    }}
+                  />
+                );
+              })}
+            </Form.Row>
+            <Form.Text>チェックを外すとその学部と思われるユーザを除外します（正確ではありません）</Form.Text>
+            <Container className="mt-3 text-center">
+              <Button className="col-8" onClick={this.search.bind(this)}>
+                検索
               </Button>
-            </Col>
+            </Container>
+          </Form>
+          <Row>
+            <h1 className="mr-auto">検索結果</h1>
+            <Button size="lg" onClick={(e) => this.state.users.forEach((user) => this.follow(user))}>
+              一括フォロー
+            </Button>
           </Row>
         </Container>
-        {/* 購読追加モーダル */}
-        <Modal show={this.state.showModal} onHide={this.handleClose.bind(this)}>
-          <Modal.Header closeButton>
-            <Modal.Title>ウォッチャカードを追加</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form>
-              <Form.Group as={Row}>
-                <Form.Label column xs={2}>
-                  URL
-                </Form.Label>
-                <Col xs={10}>
-                  <Form.Control
-                    placeholder="https://www.google.com/"
-                    type="url"
-                    value={this.state.newCardUrl}
-                    onChange={this.onNewCardUrlChange.bind(this)}
-                  />
-                </Col>
-              </Form.Group>
-              <Form.Group as={Row}>
-                <Form.Label column xs={2}>
-                  評価
-                </Form.Label>
-                <Col xs={10}>
-                  <Rate onChange={this.onNewCardRateChange.bind(this)} />
-                </Col>
-              </Form.Group>
-            </Form>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="primary" onClick={this.addSubscription.bind(this)}>
-              追加
-            </Button>
-          </Modal.Footer>
-        </Modal>
-        <Container fluid>
-          <CardDeck className="no-gutters">
-            {this.state.subscriptions.map((subscription, index) => (
-              <Col key={index} xs={12} sm={6} md={4} lg={3} xl={2}>
-                <Card>
-                  <Card.Link href={subscription.url} target="_blank">
-                    <Card.Img
-                      variant="top"
-                      src={subscription.img}
-                      referrerPolicy="no-referrer"
-                    />
-                    <Card.Title className="pt-2 px-3 mb-0">
-                      {subscription.title}
-                    </Card.Title>
-                  </Card.Link>
-                  <Card.Body className="pt-2 pb-3">
-                    <Card.Subtitle className="pb-1">
-                      {subscription.name}
-                    </Card.Subtitle>
-                    <Rate
-                      defaultValue={subscription.rating}
-                      onChange={(rate) => {
-                        this.onRateChange(index, rate);
-                      }}
-                    />
-                    <Row className="no-gutters">
-                      <Col xs={"auto"}>
-                        {dayjs(subscription.updated).format("YYYY/MM/DD")}
-                      </Col>
-                      <Col xs={"auto"} className="ml-auto mr-1">
-                        {subscription.has_new ? (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={this.onClickNew.bind(this, index)}
-                          >
-                            NEW
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={this.onClickRead.bind(this, index)}
-                          >
-                            READ
-                          </Button>
-                        )}
-                      </Col>
-                      <Col xs={"auto"}>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          onClick={this.onClickDelete.bind(this, index)}
-                        >
-                          <FontAwesomeIcon icon={faTrashAlt} color="red" />
-                        </Button>
-                      </Col>
-                    </Row>
-                  </Card.Body>
-                </Card>
+        <Container fluid className="px-4 no-gutters">
+          <Row>
+            {this.state.users.map((user: User, idx) => (
+              <Col key={idx} xs={12} sm={6} md={4} lg={3} xl={2}>
+                <UserCard
+                  user={user}
+                  onFollow={() => {
+                    this.follow(user);
+                  }}
+                />
               </Col>
             ))}
-          </CardDeck>
+          </Row>
         </Container>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-export default withAuth0(MyPage);
+export default withAuth0(Search);

@@ -6,20 +6,16 @@ import {
   Col,
   Container,
   Jumbotron,
+  Row,
+  Image,
+  CardColumns,
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
+import User from "../utils/User";
+import UserCard from "../components/UserCard";
 
-export type User = {
-  id: string;
-  name: string;
-  screen_name: string;
-  img_url: string;
-  content: string;
-  created_at: string;
-  is_following: boolean;
-};
 interface State {
   users: User[];
 }
@@ -42,43 +38,23 @@ export default class Index extends React.Component<{}, State> {
   render() {
     return (
       <React.Fragment>
-        <Jumbotron>
-          <Container>
-            <h1>仲間を、見つけよう！</h1>
-            <p>
-              Shizudaisei Finder
-              2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
-            </p>
-            <Link to="search">
-              <Button>検索する</Button>
-            </Link>
-          </Container>
+        <Jumbotron className="text-center">
+          <h1 className="display-1">仲間を、見つけよう！</h1>
+          <p className="h3 mb-3">
+            Shizudaisei Finder 2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
+          </p>
+          <Link to="search">
+            <Button size="lg">検索する</Button>
+          </Link>
         </Jumbotron>
-        <Container fluid className="px-5">
-          <CardDeck className="no-gutters">
+        <Container fluid className="px-4 no-gutters">
+          <Row>
             {this.state.users.map((user: User) => (
               <Col key={user.id} xs={12} sm={6} md={4} lg={3} xl={2}>
-                <Card>
-                  {/* <Card.Link href={page.url} target="_blank" rel="noreferrer">
-                    <Card.Img
-                      variant="top"
-                      src={page.img}
-                      referrerPolicy="no-referrer"
-                    />
-                    <Card.Body className="px-3 py-2">
-                      <Card.Title className="mb-1">{page.title}</Card.Title>
-                    </Card.Body>
-                  </Card.Link>
-                  <Card.Subtitle className="px-3 pb-2">
-                    {page.name}
-                  </Card.Subtitle>
-                  <Card.Footer>
-                    {dayjs(page.updated).format("YYYY/MM/DD")}
-                  </Card.Footer> */}
-                </Card>
+                <UserCard user={user} />
               </Col>
             ))}
-          </CardDeck>
+          </Row>
         </Container>
       </React.Fragment>
     );

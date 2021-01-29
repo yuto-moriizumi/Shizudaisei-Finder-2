@@ -36,9 +36,7 @@ class App extends React.Component<Props, {}> {
                       style={{ maxHeight: "5vh" }}
                     />
                   </Nav.Item>
-                  <Nav.Item className="pt-2 mx-2">
-                    {this.props.auth0.user.nickname}
-                  </Nav.Item>
+                  <Nav.Item className="pt-2 mx-2">{this.props.auth0.user.nickname}</Nav.Item>
                   <Nav.Item>
                     <LogoutButton />
                   </Nav.Item>
@@ -51,8 +49,8 @@ class App extends React.Component<Props, {}> {
             </Nav>
           </Navbar.Collapse>
         </Navbar>
-        <Route exact path="/" component={Index}></Route>
-        <ProtectedRoute path="/search" component={Search}></ProtectedRoute>
+        <Route exact path="/" component={Index} />
+        <ProtectedRoute path="/search" component={Search} />
       </>
     );
   }
