@@ -25,7 +25,10 @@ export default class UserCard extends React.Component<Props, {}> {
             </Col>
           </Row>
         </Card.Header>
-        <Card.Body>{user.content}</Card.Body>
+        <Card.Body>
+          {user.id}
+          {user.content}
+        </Card.Body>
         <Card.Footer>
           <Row>
             <Col xs="auto" className="px-0">

@@ -7,7 +7,7 @@ import { BrowserRouter as Router } from "react-router-dom";
 import Auth0ProviderWithHistory from "./components/Auth0ProviderWithHistory";
 import enableMock from "./utils/mockApi";
 
-enableMock();
+// enableMock();
 ReactDOM.render(
   <React.StrictMode>
     <Router>

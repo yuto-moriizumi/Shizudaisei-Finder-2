@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 //envファイルの読み込み
-const result = dotenv.config();
-// console.log(result.parsed);
+dotenv.config();
 
 import createError from "http-errors";
 import Express from "express";
@@ -9,7 +8,7 @@ import logger from "morgan";
 import cors from "cors";
 import helmet from "helmet";
 
-import apiRouter from "./routes/api";
+import usersRouter from "./routes/users";
 
 const app = Express();
 
@@ -21,11 +20,11 @@ app.use(Express.json());
 app.use(Express.urlencoded({ extended: true }));
 
 //apiルータへ
-app.use("/api", apiRouter);
+app.use("/users", usersRouter);
 
 //ダミー
 app.get("/", (req, res) => {
-  res.status(200).send("welcome to specific site api server");
+  res.status(200).send("welcome to shizudaisei finder 2 api server");
 });
 
 // catch 404 and forward to error handler

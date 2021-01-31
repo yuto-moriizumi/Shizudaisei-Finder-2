@@ -5,7 +5,6 @@ import { Col } from "react-bootstrap";
 import User from "../utils/User";
 import UserCard from "../components/UserCard";
 import axios from "axios";
-import update from "react-addons-update";
 
 type Prop = {
   auth0: Auth0ContextInterface;
@@ -24,7 +23,13 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 class Search extends React.Component<Prop, State> {
   private excl_kws = ["人文社会科学部", "教育学部", "理学部", "農学部", "情報学部", "工学部"];
-  state = { users: new Array<User>(), from: "", to: "", incl_flw: false, excl_kws: this.excl_kws };
+  state = {
+    users: new Array<User>(),
+    from: "2020-01-01",
+    to: "2030-01-01",
+    incl_flw: false,
+    excl_kws: new Array<string>(),
+  };
 
   private async search() {
     const token = await this.props.auth0.getAccessTokenSilently();
@@ -47,12 +52,15 @@ class Search extends React.Component<Prop, State> {
   private async follow(user: User) {
     const token = await this.props.auth0.getAccessTokenSilently();
     axios
-      .post(`${SERVER_URL}/users/follow`, {
-        body: { user_id: user.id },
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-      })
+      .post(
+        `${SERVER_URL}/users/follow`,
+        { user_id: user.id },
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        }
+      )
       .then(() =>
         this.setState({
           users: this.state.users.map((user2) => {
@@ -61,7 +69,8 @@ class Search extends React.Component<Prop, State> {
             return user2;
           }),
         })
-      );
+      )
+      .catch((e) => console.log(e));
   }
 
   render() {
@@ -72,14 +81,30 @@ class Search extends React.Component<Prop, State> {
           <Form className="my-3">
             <Form.Row className="mb-2">
               <Col>
-                <Form.Control type="date" placeholder="Jane Doe" />
+                <Form.Control
+                  type="date"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    this.setState({ from: e.target.value })
+                  }
+                />
               </Col>
               <Form.Label className="mx-3">から</Form.Label>
               <Col>
-                <Form.Control type="date" placeholder="Jane Doe" />
+                <Form.Control
+                  type="date"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ to: e.target.value })}
+                />
               </Col>
               <Form.Label className="ml-3 mr-4">まで</Form.Label>
-              <Form.Check id="incl_flw" inline type="checkbox" label="フォローしている人を含む" />
+              <Form.Check
+                id="incl_flw"
+                inline
+                type="checkbox"
+                label="フォローしている人を含む"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  this.setState({ incl_flw: !this.state.incl_flw })
+                }
+              />
             </Form.Row>
             <Form.Row className="d-flex justify-content-between">
               <Form.Label>学部</Form.Label>
@@ -91,7 +116,7 @@ class Search extends React.Component<Prop, State> {
                     inline
                     type="checkbox"
                     label={kw}
-                    checked={this.state.excl_kws.includes(kw)}
+                    checked={!this.state.excl_kws.includes(kw)}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       if (this.state.excl_kws.includes(kw))
                         this.setState({
