@@ -209,8 +209,6 @@ async function getAuthUser(auth0_id: string) {
 }
 
 router.post("/follow", checkJwt, async (req, res) => {
-  console.log(111);
-
   if (!req.user)
     return res.status(403).send({ error: "token does not contain user information" });
   const auth_user = await getAuthUser(req.user.sub);
@@ -221,26 +219,25 @@ router.post("/follow", checkJwt, async (req, res) => {
     access_token_secret: auth_user.access_token_secret ?? "ACCESS_TOKEN_KEY",
   });
 
-  console.log(222);
-
-  await client
+  client
     .post("friendships/create", {
       user_id: req.body.user_id,
     })
     .catch((e) => {
       console.log(e);
-      res.status(500).send();
+      res.status(500).send(e);
+    })
+    .then(async () => {
+      res.status(201).send();
+      //DBに使用状況を登録
+      const connection = await mysql2.createConnection(DB_SETTING);
+      await connection.connect();
+      connection.execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
+        auth_user.user_id,
+        req.body.user_id,
+        dayjs().format("YYYY-MM-DD HH:MM:ss"),
+      ]);
     });
-  res.status(201).send();
-
-  //DBに使用状況を登録
-  const connection = await mysql2.createConnection(DB_SETTING);
-  await connection.connect();
-  connection.execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
-    auth_user.user_id,
-    req.body.user_id,
-    dayjs().format("YYYY-MM-DD HH:MM:ss"),
-  ]);
 });
 
 //cron用 ツイートを検索してDBに追加する
