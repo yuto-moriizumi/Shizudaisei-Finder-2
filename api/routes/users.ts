@@ -223,17 +223,24 @@ router.post("/follow", checkJwt, async (req, res) => {
 
   console.log(222);
 
-  client
+  await client
     .post("friendships/create", {
       user_id: req.body.user_id,
     })
-    .then(() => res.status(201).send())
     .catch((e) => {
       console.log(e);
       res.status(500).send();
     });
+  res.status(201).send();
 
-  console.log(333);
+  //DBに使用状況を登録
+  const connection = await mysql2.createConnection(DB_SETTING);
+  await connection.connect();
+  connection.execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
+    req.user.sub,
+    req.body.user_id,
+    dayjs().format("YYYY-MM-DD HH:MM:ss"),
+  ]);
 });
 
 //cron用 ツイートを検索してDBに追加する
