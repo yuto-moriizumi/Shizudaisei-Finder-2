@@ -237,7 +237,7 @@ router.post("/follow", checkJwt, async (req, res) => {
   const connection = await mysql2.createConnection(DB_SETTING);
   await connection.connect();
   connection.execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
-    req.user.sub,
+    auth_user.user_id,
     req.body.user_id,
     dayjs().format("YYYY-MM-DD HH:MM:ss"),
   ]);
