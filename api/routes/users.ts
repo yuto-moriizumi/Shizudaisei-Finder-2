@@ -36,7 +36,9 @@ router.get("/", async (req, res) => {
   try {
     const connection = await mysql2.createConnection(DB_SETTING);
     await connection.connect();
-    const [usersArr, fields] = await connection.query("SELECT * FROM users");
+    const [usersArr, fields] = await connection.query(
+      "SELECT * FROM users ORDER BY created_at DESC"
+    );
     const users = usersArr as DbUser[];
     // console.log(TWITTER_KEYSET);
 

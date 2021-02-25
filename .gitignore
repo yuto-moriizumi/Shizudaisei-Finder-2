@@ -3,3 +3,4 @@ db/data
 front/.eslintcache
 .env
 .serverless
+.webpack
