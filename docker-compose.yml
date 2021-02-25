@@ -30,7 +30,8 @@ services:
       CONSUMER_KEY: $CONSUMER_KEY
       CONSUMER_SECRET: $CONSUMER_SECRET
       BEARER_TOKEN: $BEARER_TOKEN
-      MANAGEMENT_API_TOKEN: $MANAGEMENT_API_TOKEN
+      CLIENT_ID: $CLIENT_ID
+      CLIENT_SECRET: $CLIENT_SECRET
     command: sh -c "yarn install && yarn dev"
     depends_on:
       - db

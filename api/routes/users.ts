@@ -26,6 +26,10 @@ const TWITTER_KEYSET = {
   ...CONSUMER_KEYSET,
   bearer_token: process.env.BEARER_TOKEN ?? "BEARER_TOKEN",
 };
+const AUTH0_KEYSET = {
+  clientId: process.env.CLIENT_ID ?? "CLIENT_ID",
+  clientSecret: process.env.CLIENT_SECRET ?? "CLIENT_SECRET",
+};
 
 // ユーザを100件取得
 router.get("/", async (req, res) => {
@@ -195,11 +199,11 @@ async function fetchUserDetail(users: DbUser[]) {
 
 async function getAuthUser(auth0_id: string) {
   //認証したユーザのアクセストークンを取得
-
+  console.log(AUTH0_KEYSET);
   const ManagementClient = auth0.ManagementClient;
   const management = new ManagementClient({
-    token: process.env.MANAGEMENT_API_TOKEN ?? "MANAGEMENT_API_TOKEN",
     domain: AUTH0_DOMAIN,
+    ...AUTH0_KEYSET,
   });
   const user = await management.getUser({ id: auth0_id });
   if (!user.identities) {
