@@ -29,14 +29,19 @@ const TWITTER_KEYSET = {
 
 // ユーザを100件取得
 router.get("/", async (req, res) => {
-  const connection = await mysql2.createConnection(DB_SETTING);
-  await connection.connect();
-  const [usersArr, fields] = await connection.query("SELECT * FROM users");
-  const users = usersArr as DbUser[];
-  // console.log(TWITTER_KEYSET);
+  try {
+    const connection = await mysql2.createConnection(DB_SETTING);
+    await connection.connect();
+    const [usersArr, fields] = await connection.query("SELECT * FROM users");
+    const users = usersArr as DbUser[];
+    // console.log(TWITTER_KEYSET);
 
-  const detailed_users = await fetchUserDetail(users);
-  res.send(detailed_users);
+    const detailed_users = await fetchUserDetail(users);
+    res.send(detailed_users);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send();
+  }
 });
 
 const checkJwt = jwt({
