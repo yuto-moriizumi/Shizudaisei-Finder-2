@@ -1,6 +1,6 @@
 import React from "react";
 import { Auth0ContextInterface, withAuth0 } from "@auth0/auth0-react";
-import { Button, Container, Form, Row } from "react-bootstrap";
+import { Alert, Button, Container, Form, Row, Spinner } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import User from "../utils/User";
 import UserCard from "../components/UserCard";
@@ -15,6 +15,9 @@ type State = {
   to: string;
   incl_flw: boolean;
   excl_kws: string[];
+  is_searching: boolean;
+  search_failed: boolean;
+  is_search_empty: boolean;
 };
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
@@ -29,9 +32,13 @@ class Search extends React.Component<Prop, State> {
     to: "2030-01-01",
     incl_flw: false,
     excl_kws: new Array<string>(),
+    is_searching: false,
+    search_failed: false,
+    is_search_empty: false,
   };
 
   private async search() {
+    this.setState({ is_searching: true });
     const token = await this.props.auth0.getAccessTokenSilently();
     axios
       .get(`${SERVER_URL}/users/search`, {
@@ -45,12 +52,17 @@ class Search extends React.Component<Prop, State> {
           authorization: `Bearer ${token}`,
         },
       })
-      .then((res) => this.setState({ users: res.data }))
-      .catch((err) => console.log(err));
+      .then((res) => this.setState({ users: res.data, is_search_empty: res.data.length === 0 }))
+      .catch((err) => {
+        this.setState({ search_failed: true });
+        console.log(err);
+      })
+      .finally(() => this.setState({ is_searching: false }));
   }
 
   //ユーザをフォローする
   private async follow(user: User) {
+    if (user.is_requesting) return; //すでに対象ユーザにフォローリクエストを送信している場合は何もしない
     this.setState({
       users: this.state.users.map((user2) => {
         if (user2 !== user) return user2;
@@ -159,22 +171,44 @@ class Search extends React.Component<Prop, State> {
             </Form.Row>
             <Form.Text>チェックを外すとその学部と思われるユーザを除外します（正確ではありません）</Form.Text>
             <Container className="mt-3 text-center">
-              <Button className="col-8" onClick={this.search.bind(this)}>
-                検索
-              </Button>
+              {this.state.is_searching ? (
+                <Button className="col-8" disabled>
+                  <Spinner as="span" animation="border" role="status" aria-hidden="true" />
+                </Button>
+              ) : (
+                <Button className="col-8" onClick={this.search.bind(this)}>
+                  検索
+                </Button>
+              )}
             </Container>
           </Form>
-          <Row>
+          <Row className="mb-2">
             <h1 className="mr-auto">検索結果</h1>
             <Button
               size="lg"
               onClick={(_) => {
-                // this.state.users.forEach((user) => this.follow(user));
+                this.state.users.forEach((user) => this.follow(user));
               }}
             >
               一括フォロー
             </Button>
           </Row>
+          <Alert
+            variant="danger"
+            dismissible
+            onClose={() => this.setState({ search_failed: false })}
+            show={this.state.search_failed}
+          >
+            サーバエラー。少し時間を空ければ治るかもしれません。
+          </Alert>
+          <Alert
+            variant="info"
+            dismissible
+            onClose={() => this.setState({ is_search_empty: false })}
+            show={this.state.is_search_empty}
+          >
+            検索結果は0件でした
+          </Alert>
         </Container>
         <Container fluid className="px-4 no-gutters">
           <Row>
