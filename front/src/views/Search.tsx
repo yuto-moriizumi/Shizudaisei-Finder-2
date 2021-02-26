@@ -1,6 +1,6 @@
 import React from "react";
 import { Auth0ContextInterface, withAuth0 } from "@auth0/auth0-react";
-import { Alert, Button, Container, Form, Row, Spinner } from "react-bootstrap";
+import { Alert, Button, CardDeck, Container, Form, Row, Spinner } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import User from "../utils/User";
 import UserCard from "../components/UserCard";
@@ -65,8 +65,7 @@ class Search extends React.Component<Prop, State> {
     if (user.is_requesting) return; //すでに対象ユーザにフォローリクエストを送信している場合は何もしない
     this.setState({
       users: this.state.users.map((user2) => {
-        if (user2 !== user) return user2;
-        user2.is_requesting = true;
+        if (user2 === user) user2.is_requesting = true;
         return user2;
       }),
     });
@@ -84,8 +83,7 @@ class Search extends React.Component<Prop, State> {
       .then(() =>
         this.setState({
           users: this.state.users.map((user2) => {
-            if (user2 !== user) return user2;
-            user2.is_following = true;
+            if (user2 === user) user2.is_following = true;
             return user2;
           }),
         })
@@ -93,8 +91,7 @@ class Search extends React.Component<Prop, State> {
       .catch((e) => {
         this.setState({
           users: this.state.users.map((user2) => {
-            if (user2 !== user) return user2;
-            user2.follow_failed = true;
+            if (user2 === user) user2.follow_failed = true;
             return user2;
           }),
         });
@@ -103,12 +100,33 @@ class Search extends React.Component<Prop, State> {
       .finally(() =>
         this.setState({
           users: this.state.users.map((user2) => {
-            if (user2 !== user) return user2;
-            user2.is_requesting = false;
+            if (user2 === user) user2.is_requesting = false;
             return user2;
           }),
         })
       );
+  }
+
+  private getCardsWithSeparator(users: User[]) {
+    //カードをレスポンシブ対応させるために、キー付セパレータを混ぜたJSXの配列を生成する
+    const result = new Array<JSX.Element>();
+    let key = 0;
+    for (let i = 0; i < users.length; i++) {
+      if (i % 2 === 0) result.push(<div className="w-100 d-none d-sm-block d-md-none" key={key++}></div>);
+      if (i % 3 === 0) result.push(<div className="w-100 d-none d-md-block d-lg-none" key={key++}></div>);
+      if (i % 4 === 0) result.push(<div className="w-100 d-none d-lg-block d-xl-none" key={key++}></div>);
+      if (i % 5 === 0) result.push(<div className="w-100 d-none d-xl-block" key={key++}></div>);
+      result.push(
+        <UserCard
+          key={key++}
+          user={users[i]}
+          onFollow={() => {
+            this.follow(users[i]);
+          }}
+        />
+      );
+    }
+    return result;
   }
 
   render() {
@@ -214,20 +232,7 @@ class Search extends React.Component<Prop, State> {
           </Alert>
         </Container>
         <Container fluid className="px-4 no-gutters">
-          <Row>
-            {this.state.users.map((user: User, idx) => {
-              return (
-                <Col key={idx} xs={12} sm={6} md={4} lg={3} xl={2}>
-                  <UserCard
-                    user={user}
-                    onFollow={() => {
-                      this.follow(user);
-                    }}
-                  />
-                </Col>
-              );
-            })}
-          </Row>
+          <CardDeck>{this.getCardsWithSeparator(this.state.users)}</CardDeck>
         </Container>
       </>
     );

@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Col, Row, Image, Button, Spinner } from "react-bootstrap";
+import { Card, Col, Row, Image, Button, Spinner, Container } from "react-bootstrap";
 import User from "../utils/User";
 import dayjs from "dayjs";
 
@@ -11,23 +11,25 @@ export default class UserCard extends React.Component<Props, {}> {
   render() {
     const user = this.props.user;
     return (
-      <Card key={user.id} className="mx-0 mb-4">
-        <Card.Header>
-          <Row>
-            <Col className="pl-0" xs="auto">
-              <Image src={user.img_url} thumbnail style={{ maxHeight: "48px" }} />
-            </Col>
-            <Col className="px-0" xs="auto">
-              <Card.Link href={"https://twitter.com/" + user.screen_name} target="_blank">
-                <p className="mb-0">{user.name}</p>
-                <small>@{user.screen_name}</small>
-              </Card.Link>
-            </Col>
-          </Row>
+      <Card key={user.id} className="mb-4">
+        <Card.Header className="p-2">
+          <Container fluid>
+            <Row>
+              <Col className="px-0" xs="2">
+                <Image fluid src={user.img_url} style={{ maxHeight: "48px" }} />
+              </Col>
+              <Col className="pl-1 pr-0" xs="10">
+                <Card.Link href={"https://twitter.com/" + user.screen_name} target="_blank">
+                  <h6 className="mb-0">{user.name}</h6>
+                  <small>@{user.screen_name}</small>
+                </Card.Link>
+              </Col>
+            </Row>
+          </Container>
         </Card.Header>
-        <Card.Body>{user.content}</Card.Body>
+        <Card.Body className="p-3">{user.content}</Card.Body>
         <Card.Footer>
-          <Row>
+          <Row className="px-2">
             <Col xs="auto" className="px-0">
               {dayjs(user.created_at).format("YYYY-MM-DD")}
             </Col>
@@ -52,7 +54,7 @@ export default class UserCard extends React.Component<Props, {}> {
                 )}
               </Col>
             ) : (
-              "Error"
+              ""
             )}
           </Row>
         </Card.Footer>

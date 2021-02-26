@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Col, Container, Jumbotron, Row } from "react-bootstrap";
+import { Button, CardColumns, CardDeck, Col, Container, Jumbotron, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -25,6 +25,20 @@ export default class Index extends React.Component<{}, State> {
       .catch((err) => console.log(err));
   }
 
+  private getCardsWithSeparator(users: User[]) {
+    //カードをレスポンシブ対応させるために、キー付セパレータを混ぜたJSXの配列を生成する
+    const result = new Array<JSX.Element>();
+    let key = 0;
+    for (let i = 0; i < users.length; i++) {
+      if (i % 2 === 0) result.push(<div className="w-100 d-none d-sm-block d-md-none" key={key++}></div>);
+      if (i % 3 === 0) result.push(<div className="w-100 d-none d-md-block d-lg-none" key={key++}></div>);
+      if (i % 4 === 0) result.push(<div className="w-100 d-none d-lg-block d-xl-none" key={key++}></div>);
+      if (i % 5 === 0) result.push(<div className="w-100 d-none d-xl-block" key={key++}></div>);
+      result.push(<UserCard key={key++} user={users[i]} />);
+    }
+    return result;
+  }
+
   render() {
     return (
       <React.Fragment>
@@ -38,13 +52,7 @@ export default class Index extends React.Component<{}, State> {
           </Link>
         </Jumbotron>
         <Container fluid className="px-4 no-gutters">
-          <Row>
-            {this.state.users.map((user: User) => (
-              <Col key={user.id} xs={12} sm={6} md={4} lg={3} xl={2}>
-                <UserCard user={user} />
-              </Col>
-            ))}
-          </Row>
+          <CardDeck>{this.getCardsWithSeparator(this.state.users)}</CardDeck>
         </Container>
       </React.Fragment>
     );
