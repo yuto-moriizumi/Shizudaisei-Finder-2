@@ -79,7 +79,9 @@ declare global {
 // 購読一覧をstar降順に取得する
 router.get("/search", checkJwt, async (req, res) => {
   if (!req.user)
-    return res.status(403).send({ error: "token does not contain user information" });
+    return res
+      .status(403)
+      .send({ error: "token does not contain user information" });
 
   //検索オプションを成形
   type SearchOptions = {
@@ -91,53 +93,37 @@ router.get("/search", checkJwt, async (req, res) => {
   const options = req.query as SearchOptions;
   console.log(options);
 
-  //検索条件に応じてDBを検索
-  const connection = await mysql2.createConnection(DB_SETTING);
-  await connection.connect();
+  try {
+    //検索条件に応じてDBを検索
+    const connection = await mysql2.createConnection(DB_SETTING);
+    await connection.connect();
 
-  console.log(1);
+    //クエリを構築する
+    let QUERY = "SELECT * FROM users WHERE created_at BETWEEN ? AND ?";
+    if (options.excl_kws)
+      //除外キーワードが指定されている場合は除外
+      QUERY += ` AND NOT content REGEXP('${options.excl_kws
+        .map((kw) => `.*${kw}.*`)
+        .join("|")}')`;
 
-  //クエリを構築する
-  let QUERY = "SELECT * FROM users WHERE created_at BETWEEN ? AND ?";
-  if (options.excl_kws)
-    //除外キーワードが指定されている場合は除外
-    QUERY += ` AND NOT content REGEXP('${options.excl_kws
-      .map((kw) => `.*${kw}.*`)
-      .join("|")}')`;
+    const from = dayjs(options.from);
+    const to = dayjs(options.to);
 
-  const from = dayjs(options.from);
-  const to = dayjs(options.to);
-
-  console.log(2);
-
-  //クエリ実行
-  const result_set = await connection
-    .execute(QUERY, [
+    //クエリ実行
+    const result_set = await connection.execute(QUERY, [
       from.isValid() ? from.format("YYYY-MM-DD") : "2000-01-01",
       to.isValid() ? to.format("YYYY-MM-DD") : "2050-01-01",
-    ])
-    .catch((e) => {
-      console.log(e);
-      res.status(500).send();
-    });
-
-  if (!result_set) {
-    //検索結果0件の場合
-    res.status(200).send([]);
-    return;
-  }
-  const [users_temp, fields] = result_set;
-  let users = users_temp as DbUser[];
-
-  console.log(3);
-
-  if (options.incl_flw === "false") {
-    //フォローしているユーザを検索結果に含めない場合は、フォローしているユーザ一覧を取得する
-    const auth_user = await getAuthUser(req.user.sub);
-    if (!auth_user) {
-      res.status(500).send();
+    ]);
+    if (!result_set) {
+      //検索結果0件の場合
+      res.status(200).send([]);
       return;
     }
+    const [users_temp, fields] = result_set;
+    let users = users_temp as DbUser[];
+
+    //フォローしているユーザ一覧を取得する
+    const auth_user = await getAuthUser(req.user.sub);
 
     //Twitterインスタンス化
     const client = new Twitter({
@@ -152,17 +138,24 @@ router.get("/search", checkJwt, async (req, res) => {
       count: 5000,
       stringify_ids: true,
     });
-
-    //フォローしているユーザを除外
     const following_ids = followings.ids as Array<string>;
-    users = users.filter((user) => following_ids.indexOf(user.id) === -1);
+
+    if (options.incl_flw === "false")
+      //フォローしているユーザを除外する場合
+      users = users.filter((user) => following_ids.indexOf(user.id) === -1);
+
+    const detailed_users = await fetchUserDetail(users);
+    res.send(
+      detailed_users.map((user) => {
+        //フォローしているユーザのIDリストに該当していれば
+        if (following_ids.includes(user.id)) user.is_following = true;
+        return user;
+      })
+    );
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
   }
-  console.log(4);
-  const detailed_users = await fetchUserDetail(users).catch((e) => {
-    console.log(e);
-    res.status(500).send();
-  });
-  res.send(detailed_users);
 });
 
 async function fetchUserDetail(users: DbUser[]) {
@@ -182,7 +175,9 @@ async function fetchUserDetail(users: DbUser[]) {
   if (!detailed_users) throw new Error("couldn't fetch users");
 
   //users配列をidで取れるようにMapに変換
-  const users_map = new Map<string, DbUser>(users.map((user) => [user.id, user]));
+  const users_map = new Map<string, DbUser>(
+    users.map((user) => [user.id, user])
+  );
 
   const responce_users = detailed_users.map((user: TwitterResponseUser) => {
     const tweet_user = users_map.get(user.id_str);
@@ -208,9 +203,7 @@ async function getAuthUser(auth0_id: string) {
     ...AUTH0_KEYSET,
   });
   const user = await management.getUser({ id: auth0_id });
-  if (!user.identities) {
-    return null;
-  }
+  if (!user.identities) throw new Error("User identities not found");
   const identity = JSON.parse(JSON.stringify(user.identities[0]));
   return {
     access_token: identity.access_token as string,
@@ -221,9 +214,12 @@ async function getAuthUser(auth0_id: string) {
 
 router.post("/follow", checkJwt, async (req, res) => {
   if (!req.user)
-    return res.status(403).send({ error: "token does not contain user information" });
+    return res
+      .status(403)
+      .send({ error: "token does not contain user information" });
   const auth_user = await getAuthUser(req.user.sub);
-  if (!auth_user) return res.status(500).send({ error: "management api error" });
+  if (!auth_user)
+    return res.status(500).send({ error: "management api error" });
   const client = new Twitter({
     ...CONSUMER_KEYSET,
     access_token_key: auth_user.access_token ?? "ACCESS_TOKEN_KEY",
