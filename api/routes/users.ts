@@ -33,14 +33,13 @@ const AUTH0_KEYSET = {
 
 // ユーザを100件取得
 router.get("/", async (req, res) => {
+  const connection = await mysql2.createConnection(DB_SETTING);
   try {
-    const connection = await mysql2.createConnection(DB_SETTING);
     await connection.connect();
     const [usersArr, fields] = await connection.query(
       "SELECT * FROM users ORDER BY created_at DESC"
     );
     const users = usersArr as DbUser[];
-    // console.log(TWITTER_KEYSET);
 
     const detailed_users = await fetchUserDetail(users);
     res.send(detailed_users);
@@ -48,6 +47,7 @@ router.get("/", async (req, res) => {
     console.log(error);
     res.status(500).send();
   }
+  connection.end();
 });
 
 const checkJwt = jwt({
@@ -93,9 +93,9 @@ router.get("/search", checkJwt, async (req, res) => {
   const options = req.query as SearchOptions;
   console.log(options);
 
+  const connection = await mysql2.createConnection(DB_SETTING);
   try {
     //検索条件に応じてDBを検索
-    const connection = await mysql2.createConnection(DB_SETTING);
     await connection.connect();
 
     //クエリを構築する
@@ -157,6 +157,7 @@ router.get("/search", checkJwt, async (req, res) => {
     console.log(error);
     res.status(500).send(error);
   }
+  connection.end();
 });
 
 async function fetchUserDetail(users: DbUser[]) {
@@ -248,11 +249,14 @@ router.post("/follow", checkJwt, async (req, res) => {
       //DBに使用状況を登録
       const connection = await mysql2.createConnection(DB_SETTING);
       await connection.connect();
-      connection.execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
-        auth_user.user_id,
-        req.body.user_id,
-        dayjs().format("YYYY-MM-DD HH:MM:ss"),
-      ]);
+      connection
+        .execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
+          auth_user.user_id,
+          req.body.user_id,
+          dayjs().format("YYYY-MM-DD HH:MM:ss"),
+        ])
+        .catch((err) => console.log(err));
+      connection.end();
     });
 });
 
@@ -283,15 +287,23 @@ router.get("/update", async (req, res) => {
   //DBに登録
   const connection = await mysql2.createConnection(DB_SETTING);
   await connection.connect();
+  const result = new Array<any>();
   users.forEach((user) => {
-    connection.execute("INSERT IGNORE users VALUES (?, ?, ?, ?)", [
-      user.id,
-      user.tweet_id,
-      user.content,
-      user.created_at,
-    ]);
+    connection
+      .execute("INSERT IGNORE users VALUES (?, ?, ?, ?)", [
+        user.id,
+        user.tweet_id,
+        user.content,
+        user.created_at,
+      ])
+      .catch((err) => {
+        console.log(err);
+        result.push(err);
+      });
   });
-  res.send();
+  connection.end();
+  if (result.length === 0) res.send();
+  res.status(500).send(result);
 });
 
 export default router;
