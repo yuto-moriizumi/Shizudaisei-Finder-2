@@ -49,7 +49,15 @@ class Search extends React.Component<Prop, State> {
       .catch((err) => console.log(err));
   }
 
+  //ユーザをフォローする
   private async follow(user: User) {
+    this.setState({
+      users: this.state.users.map((user2) => {
+        if (user2 !== user) return user2;
+        user2.is_requesting = true;
+        return user2;
+      }),
+    });
     const token = await this.props.auth0.getAccessTokenSilently();
     axios
       .post(
@@ -61,16 +69,31 @@ class Search extends React.Component<Prop, State> {
           },
         }
       )
-      .then(() =>
+      .then(() => {
+        console.log("req suc");
         this.setState({
           users: this.state.users.map((user2) => {
             if (user2 !== user) return user2;
             user2.is_following = true;
             return user2;
           }),
-        })
-      )
-      .catch((e) => console.log(e));
+        });
+      })
+      .catch((e) => {
+        console.log("req err");
+        console.log(e);
+      })
+      .finally(() => {
+        console.log("req final");
+        this.setState({
+          users: this.state.users.map((user2) => {
+            if (user2 !== user) return user2;
+            user2.is_requesting = false;
+            return user2;
+          }),
+        });
+        console.log(user);
+      });
   }
 
   render() {
@@ -101,7 +124,7 @@ class Search extends React.Component<Prop, State> {
                 inline
                 type="checkbox"
                 label="フォローしている人を含む"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onChange={(_: React.ChangeEvent<HTMLInputElement>) =>
                   this.setState({ incl_flw: !this.state.incl_flw })
                 }
               />
@@ -143,23 +166,30 @@ class Search extends React.Component<Prop, State> {
           </Form>
           <Row>
             <h1 className="mr-auto">検索結果</h1>
-            <Button size="lg" onClick={(e) => this.state.users.forEach((user) => this.follow(user))}>
+            <Button
+              size="lg"
+              onClick={(_) => {
+                // this.state.users.forEach((user) => this.follow(user));
+              }}
+            >
               一括フォロー
             </Button>
           </Row>
         </Container>
         <Container fluid className="px-4 no-gutters">
           <Row>
-            {this.state.users.map((user: User, idx) => (
-              <Col key={idx} xs={12} sm={6} md={4} lg={3} xl={2}>
-                <UserCard
-                  user={user}
-                  onFollow={() => {
-                    this.follow(user);
-                  }}
-                />
-              </Col>
-            ))}
+            {this.state.users.map((user: User, idx) => {
+              return (
+                <Col key={idx} xs={12} sm={6} md={4} lg={3} xl={2}>
+                  <UserCard
+                    user={user}
+                    onFollow={() => {
+                      this.follow(user);
+                    }}
+                  />
+                </Col>
+              );
+            })}
           </Row>
         </Container>
       </>

@@ -1,15 +1,5 @@
 import React from "react";
-import {
-  Button,
-  Card,
-  CardDeck,
-  Col,
-  Container,
-  Jumbotron,
-  Row,
-  Image,
-  CardColumns,
-} from "react-bootstrap";
+import { Button, Col, Container, Jumbotron, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";

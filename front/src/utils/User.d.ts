@@ -6,4 +6,5 @@ export default interface User {
   content: string;
   created_at: string;
   is_following?: boolean;
+  is_requesting?: boolean;
 }

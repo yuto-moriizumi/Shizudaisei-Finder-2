@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Col, Row, Image, Button } from "react-bootstrap";
+import { Card, Col, Row, Image, Button, Spinner } from "react-bootstrap";
 import User from "../utils/User";
 import dayjs from "dayjs";
 
@@ -33,7 +33,11 @@ export default class UserCard extends React.Component<Props, {}> {
             </Col>
             {this.props.onFollow ? (
               <Col xs="auto" className="px-0 ml-auto">
-                {user.is_following ? (
+                {user.is_requesting ? ( //フォローリクエスト送信中であれば
+                  <Button size="sm" disabled>
+                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                  </Button>
+                ) : user.is_following ? (
                   <Button size="sm" disabled>
                     フォロー済
                   </Button>
@@ -44,7 +48,7 @@ export default class UserCard extends React.Component<Props, {}> {
                 )}
               </Col>
             ) : (
-              ""
+              "Error"
             )}
           </Row>
         </Card.Footer>
