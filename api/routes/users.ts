@@ -147,8 +147,9 @@ router.get("/search", checkJwt, async (req, res) => {
     const detailed_users = await fetchUserDetail(users);
     res.send(
       detailed_users.map((user) => {
-        //フォローしているユーザのIDリストに該当していれば
-        if (following_ids.includes(user.id)) user.is_following = true;
+        //フォローしているユーザのIDリストに該当しているか、自分自身のアカウントであればフォロー扱いにする
+        if (following_ids.includes(user.id) || user.id === auth_user.user_id)
+          user.is_following = true;
         return user;
       })
     );
@@ -234,7 +235,15 @@ router.post("/follow", checkJwt, async (req, res) => {
       console.log(e);
       res.status(500).send(e);
     })
-    .then(async () => {
+    .then(async (result) => {
+      if (result instanceof Array) {
+        //エラーオブジェクトの配列が返された場合
+        const error = result[0] as { code: number; message: string };
+        if (error.code === 162) return res.status(403).send(error); //対象のユーザにブロックされている
+        if (error.code === 88) return res.status(429).send(error); //レート制限
+        return res.status(500).send(error); //その他のエラー
+      }
+      console.log(result);
       res.status(201).send();
       //DBに使用状況を登録
       const connection = await mysql2.createConnection(DB_SETTING);
