@@ -37,6 +37,10 @@ export default class UserCard extends React.Component<Props, {}> {
                   <Button size="sm" disabled>
                     <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
                   </Button>
+                ) : user.follow_failed ? ( //フォローリクエストが失敗した場合は
+                  <Button size="sm" variant="danger" disabled>
+                    フォロー失敗
+                  </Button>
                 ) : user.is_following ? (
                   <Button size="sm" disabled>
                     フォロー済

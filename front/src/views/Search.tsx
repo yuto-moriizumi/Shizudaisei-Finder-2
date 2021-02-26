@@ -81,31 +81,34 @@ class Search extends React.Component<Prop, State> {
           },
         }
       )
-      .then(() => {
-        console.log("req suc");
+      .then(() =>
         this.setState({
           users: this.state.users.map((user2) => {
             if (user2 !== user) return user2;
             user2.is_following = true;
             return user2;
           }),
-        });
-      })
+        })
+      )
       .catch((e) => {
-        console.log("req err");
+        this.setState({
+          users: this.state.users.map((user2) => {
+            if (user2 !== user) return user2;
+            user2.follow_failed = true;
+            return user2;
+          }),
+        });
         console.log(e);
       })
-      .finally(() => {
-        console.log("req final");
+      .finally(() =>
         this.setState({
           users: this.state.users.map((user2) => {
             if (user2 !== user) return user2;
             user2.is_requesting = false;
             return user2;
           }),
-        });
-        console.log(user);
-      });
+        })
+      );
   }
 
   render() {

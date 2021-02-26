@@ -7,4 +7,5 @@ export default interface User {
   created_at: string;
   is_following?: boolean;
   is_requesting?: boolean;
+  follow_failed?: boolean;
 }
