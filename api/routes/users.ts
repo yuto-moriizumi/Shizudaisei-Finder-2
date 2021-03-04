@@ -33,11 +33,12 @@ const AUTH0_KEYSET = {
 
 // ユーザを100件取得
 router.get("/", async (req, res) => {
+  const offset = parseInt((req.query.offset as string) ?? "0");
   const connection = await mysql2.createConnection(DB_SETTING);
   try {
     await connection.connect();
     const [usersArr, fields] = await connection.query(
-      "SELECT * FROM users ORDER BY created_at DESC"
+      `SELECT * FROM users ORDER BY created_at DESC LIMIT 100 OFFSET ${offset}`
     );
     const users = usersArr as DbUser[];
 

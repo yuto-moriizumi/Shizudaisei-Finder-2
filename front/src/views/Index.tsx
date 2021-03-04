@@ -1,28 +1,35 @@
 import React from "react";
-import { Button, CardColumns, CardDeck, Col, Container, Jumbotron, Row } from "react-bootstrap";
+import { Button, CardDeck, Container, Jumbotron } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import dayjs from "dayjs";
 import User from "../utils/User";
 import UserCard from "../components/UserCard";
 
 interface State {
   users: User[];
+  isLoading: boolean;
 }
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 if (!SERVER_URL) new Error("SERVER_URL must be specified");
 
 export default class Index extends React.Component<{}, State> {
-  state = { users: new Array<User>() };
+  state = { users: new Array<User>(), isLoading: false };
 
-  componentWillMount() {
+  componentDidMount() {
+    this.getUsers(0);
+    window.addEventListener("scroll", this.handleScroll.bind(this));
+  }
+
+  private getUsers(offset: number) {
+    this.setState({ isLoading: true });
     axios
-      .get(`${SERVER_URL}/users`)
+      .get(`${SERVER_URL}/users?offset=${offset}`)
       .then((res) => {
-        this.setState({ users: res.data });
+        this.setState({ users: this.state.users.concat(res.data) });
       })
-      .catch((err) => console.log(err));
+      .catch((e) => console.log(e))
+      .finally(() => this.setState({ isLoading: false }));
   }
 
   private getCardsWithSeparator(users: User[]) {
@@ -37,6 +44,17 @@ export default class Index extends React.Component<{}, State> {
       result.push(<UserCard key={key++} user={users[i]} />);
     }
     return result;
+  }
+
+  private handleScroll() {
+    const LOADING_HEIGHT_RATE = 0.9;
+    if (
+      Math.ceil(window.innerHeight + document.documentElement.scrollTop) <
+        document.documentElement.offsetHeight * LOADING_HEIGHT_RATE ||
+      this.state.isLoading //ロード中はapiを呼ばない
+    )
+      return;
+    this.getUsers(this.state.users.length);
   }
 
   render() {

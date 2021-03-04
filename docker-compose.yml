@@ -13,7 +13,6 @@ services:
       REACT_APP_SERVER_URL: "http://localhost:3000"
   api:
     image: node:14.15.4-buster-slim
-    container_name: api-container
     hostname: api-container
     volumes:
       - ./api/:/usr/src/
@@ -37,7 +36,6 @@ services:
       - db
   db:
     image: mysql:8
-    container_name: db-container
     ports:
       - "3306:3306"
     environment:
@@ -49,7 +47,6 @@ services:
   # compose up しないとphpmyadminに入れない(理由不明)
   phpmyadmin:
     image: phpmyadmin #fpmやalpineタグは別途httpサーバが必要
-    container_name: phpmyadmin
     environment:
       - PMA_ARBITRARY=1
       # - PMA_HOST=db
