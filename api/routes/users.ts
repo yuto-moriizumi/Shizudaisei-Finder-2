@@ -288,7 +288,7 @@ router.get("/update", async (req, res) => {
   //DBに登録
   const connection = await mysql2.createConnection(DB_SETTING);
   await connection.connect();
-  const result = new Array<any>();
+  const errors = new Array<any>();
   users.forEach((user) => {
     connection
       .execute("INSERT IGNORE users VALUES (?, ?, ?, ?)", [
@@ -299,12 +299,12 @@ router.get("/update", async (req, res) => {
       ])
       .catch((err) => {
         console.log(err);
-        result.push(err);
+        errors.push(err);
       });
   });
   connection.end();
-  if (result.length === 0) res.send();
-  res.status(500).send(result);
+  if (errors.length === 0) res.send();
+  else res.status(500).send(errors);
 });
 
 export default router;
