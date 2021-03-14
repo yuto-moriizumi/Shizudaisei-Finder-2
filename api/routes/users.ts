@@ -90,6 +90,7 @@ router.get("/search", checkJwt, async (req, res) => {
     to?: string;
     incl_flw: string;
     excl_kws?: string[];
+    excl_names?: string[];
   };
   const options = req.query as SearchOptions;
   console.log(options);
@@ -148,7 +149,14 @@ router.get("/search", checkJwt, async (req, res) => {
       //フォローしているユーザを除外する場合
       users = users.filter((user) => following_ids.indexOf(user.id) === -1);
 
-    const detailed_users = await fetchUserDetail(users);
+    let detailed_users = await fetchUserDetail(users);
+    if (options.excl_names) {
+      const excl_names = options.excl_names;
+      //除外するアカウント名が指定されている場合は除外
+      detailed_users = detailed_users.filter(
+        (user) => excl_names.every((keyword) => !user.name.includes(keyword)) //いずれのキーワードも含まない全てのアカウントを返す
+      );
+    }
     res.send(
       detailed_users.map((user) => {
         //フォローしているユーザのIDリストに該当しているか、自分自身のアカウントであればフォロー扱いにする

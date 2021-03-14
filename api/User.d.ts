@@ -6,9 +6,9 @@ export default interface DbUser {
 }
 
 export interface TwitterResponseUser {
-  id_str: string;
+  id_str: string; //Twitter内部で管理しているユーザID
   name: string;
-  screen_name: string;
+  screen_name: string; //Twitterのレスポンスにおけるscreen_nameで、いわゆる変更できるIDのこと
   profile_image_url_https: string;
 }
 
