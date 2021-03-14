@@ -111,10 +111,13 @@ router.get("/search", checkJwt, async (req, res) => {
     const to = dayjs(options.to);
 
     //クエリ実行
-    const result_set = await connection.execute(QUERY, [
-      from.isValid() ? from.format("YYYY-MM-DD") : "2000-01-01",
-      to.isValid() ? to.format("YYYY-MM-DD") : "2050-01-01",
-    ]);
+    const result_set = await connection.execute(
+      QUERY + " ORDER BY created_at DESC",
+      [
+        from.isValid() ? from.format("YYYY-MM-DD") : "2000-01-01",
+        to.isValid() ? to.format("YYYY-MM-DD") : "2050-01-01",
+      ]
+    );
     if (!result_set) {
       //検索結果0件の場合
       res.status(200).send([]);
@@ -263,48 +266,125 @@ router.post("/follow", checkJwt, async (req, res) => {
 
 //cron用 ツイートを検索してDBに追加する
 router.get("/update", async (req, res) => {
-  const client = new Twitter(TWITTER_KEYSET);
-  const responce = await client.get("search/tweets", {
-    q: "#春から静大",
-    result_type: "recent",
-    count: 100,
-    include_entities: false,
-  });
-  let tweets = responce.statuses as {
-    id_str: string;
-    text: string;
-    user: { id_str: string };
-    created_at: string;
-  }[];
-  const users = tweets.map((tweet) => {
-    return {
-      id: tweet.user.id_str,
-      tweet_id: tweet.id_str,
-      content: tweet.text,
-      created_at: dayjs(tweet.created_at).format("YYYY-MM-DD HH:mm:ss"),
-    };
-  });
-
-  //DBに登録
-  const connection = await mysql2.createConnection(DB_SETTING);
-  await connection.connect();
-  const errors = new Array<any>();
-  users.forEach((user) => {
-    connection
-      .execute("INSERT IGNORE users VALUES (?, ?, ?, ?)", [
-        user.id,
-        user.tweet_id,
-        user.content,
-        user.created_at,
-      ])
-      .catch((err) => {
-        console.log(err);
-        errors.push(err);
+  try {
+    const API_TYPE = req.query.type; //"30day" or "fullarchive"
+    const IS_PREMIUM_API = API_TYPE === "fullarchive" || API_TYPE === "30day";
+    console.log("type", API_TYPE);
+    const NEXT = req.query.next; //for pagination, provided by api responce
+    const client = new Twitter(TWITTER_KEYSET);
+    const endpoint =
+      API_TYPE === "fullarchive"
+        ? "tweets/search/fullarchive/test2"
+        : API_TYPE === "30day"
+        ? "tweets/search/30day/test"
+        : "search/tweets";
+    let request = {};
+    if (IS_PREMIUM_API) {
+      request = {
+        query: "#春から静大",
+        toDate: 202102200000,
+      };
+      if (NEXT) {
+        Object.defineProperty(request, "next", {
+          value: NEXT,
+        });
+      }
+    } else {
+      request = {
+        q: "#春から静大",
+        result_type: "recent",
+        count: 100,
+        include_entities: false,
+      };
+    }
+    const responce = await client.get(endpoint, request);
+    const next = responce.next;
+    let tweets = (IS_PREMIUM_API ? responce.results : responce.statuses) as {
+      id_str: string;
+      name: string;
+      text: string;
+      user: { id_str: string; name: string };
+      created_at: string;
+      retweeted_status?: {};
+    }[];
+    const users = tweets
+      .filter((tweet) => tweet.retweeted_status === undefined) //RTを除外
+      .map((tweet) => {
+        return {
+          id: tweet.user.id_str,
+          name: tweet.user.name,
+          tweet_id: tweet.id_str,
+          content: tweet.text,
+          created_at: dayjs(tweet.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        };
       });
-  });
-  connection.end();
-  if (errors.length === 0) res.send();
-  else res.status(500).send(errors);
+
+    //DBに登録
+    const connection = await mysql2.createConnection(DB_SETTING);
+    await connection.connect();
+    const success = new Array<{}>();
+    const skip = new Array<{}>();
+    const error = new Array<{}>();
+    users.forEach((user) => {
+      connection
+        .execute("INSERT users VALUES (?, ?, ?, ?)", [
+          user.id,
+          user.tweet_id,
+          user.content,
+          user.created_at,
+        ])
+        .then(() => {
+          // console.log("success", { user_id: user.id, name: user.name });
+          success.push({ user_id: user.id, name: user.name });
+        })
+        .catch((err: { code: string; sqlMessage: string }) => {
+          if (err.code === "ER_DUP_ENTRY") {
+            // console.log("skip", { user_id: user.id, name: user.name });
+            skip.push({ user_id: user.id, name: user.name });
+            return;
+          }
+          console.log("error", { user_id: user.id, name: user.name });
+          error.push({
+            code: err.code,
+            message: err.sqlMessage,
+            user_id: user.id,
+            name: user.name,
+          });
+          console.log(err);
+        });
+    });
+    await connection.end();
+    const result = {
+      total: users.length,
+      next: next,
+      success: {
+        total: success.length,
+        entries: success,
+      },
+      skip: {
+        total: skip.length,
+        entries: skip,
+      },
+      error: {
+        total: error.length,
+        entries: error,
+      },
+    };
+    if (error.length === 0) {
+      res.send(result);
+      console.log(
+        `user insertion cron success, inserted:${success.length} skipped:${skip.length}`
+      );
+      return;
+    }
+    res.status(500).send(result);
+    console.log(
+      `user insertion cron failed, inserted:${success.length} skipped:${skip.length}, error:${error.length}`
+    );
+  } catch (error) {
+    console.log(error);
+    res.status(500).send();
+  }
 });
 
 export default router;
