@@ -15,6 +15,7 @@ if (!SERVER_URL) new Error("SERVER_URL must be specified");
 
 export default class Index extends React.Component<{}, State> {
   state = { users: new Array<User>(), isLoading: false };
+  private next = "";
 
   componentDidMount() {
     this.getUsers(0);
@@ -57,6 +58,16 @@ export default class Index extends React.Component<{}, State> {
     this.getUsers(this.state.users.length);
   }
 
+  private cron() {
+    axios
+      .get(`${SERVER_URL}/users/update?type=fullarchive` + (this.next === "" ? "" : `&next=${this.next}`))
+      .then((res) => {
+        this.next = res.data.next;
+        this.cron();
+      })
+      .catch((e) => console.log(e));
+  }
+
   render() {
     return (
       <React.Fragment>
@@ -68,6 +79,14 @@ export default class Index extends React.Component<{}, State> {
           <Link to="search">
             <Button size="lg">検索する</Button>
           </Link>
+          {/* <Button
+            size="lg"
+            onClick={() => {
+              this.cron();
+            }}
+          >
+            管理者用:更新
+          </Button> */}
         </Jumbotron>
         <Container fluid className="px-4 no-gutters">
           <CardDeck>{this.getCardsWithSeparator(this.state.users)}</CardDeck>
