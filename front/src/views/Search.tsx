@@ -27,7 +27,7 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 // if (!(SERVER_URL && AUDIENCE)) new Error("env invalid");
 
 class Search extends React.Component<Prop, State> {
-  private excl_kws = ["人文社会科学部", "教育学部", "理学部", "農学部", "情報学部", "工学部"];
+  private excl_kws = ["学環", "人文社会科学部", "教育学部", "理学部", "農学部", "情報学部", "工学部"];
   private excl_names = ["サークル"];
   state = {
     users: new Array<User>(),
