@@ -48,7 +48,7 @@ export default class Index extends React.Component<{}, State> {
   }
 
   private handleScroll() {
-    const LOADING_HEIGHT_RATE = 0.9;
+    const LOADING_HEIGHT_RATE = 0.8;
     if (
       Math.ceil(window.innerHeight + document.documentElement.scrollTop) <
         document.documentElement.offsetHeight * LOADING_HEIGHT_RATE ||
