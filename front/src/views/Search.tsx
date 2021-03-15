@@ -27,7 +27,7 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 // if (!(SERVER_URL && AUDIENCE)) new Error("env invalid");
 
 class Search extends React.Component<Prop, State> {
-  private excl_kws = ["学環", "人文社会科学部", "教育学部", "理学部", "農学部", "情報学部", "工学部"];
+  private excl_kws = ["学環", "人文", "教育", "理学部", "農学部", "情報学部", "工学部"];
   private excl_names = ["サークル"];
   state = {
     users: new Array<User>(),
@@ -67,7 +67,7 @@ class Search extends React.Component<Prop, State> {
 
   //ユーザをフォローする
   private async follow(user: User) {
-    if (user.is_requesting) return; //すでに対象ユーザにフォローリクエストを送信している場合は何もしない
+    if (user.is_requesting || user.is_following) return; //すでに対象ユーザにフォローリクエストを送信しているか、フォロー済み場合は何もしない
     this.setState({
       users: this.state.users.map((user2) => {
         if (user2 === user) user2.is_requesting = true;
