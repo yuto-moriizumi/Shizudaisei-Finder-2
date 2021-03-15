@@ -16,10 +16,14 @@ if (!SERVER_URL) new Error("SERVER_URL must be specified");
 export default class Index extends React.Component<{}, State> {
   state = { users: new Array<User>(), isLoading: false };
   private next = "";
+  private handleScrollBinded = this.handleScroll.bind(this);
 
   componentDidMount() {
     this.getUsers(0);
-    window.addEventListener("scroll", this.handleScroll.bind(this));
+    window.addEventListener("scroll", this.handleScrollBinded);
+  }
+  componentWillUnmount() {
+    window.removeEventListener("scroll", this.handleScrollBinded);
   }
 
   private getUsers(offset: number) {
