@@ -129,6 +129,10 @@ router.get("/search", checkJwt, async (req, res) => {
 
     //フォローしているユーザ一覧を取得する
     const auth_user = await getAuthUser(req.user.sub);
+    if (auth_user instanceof UserIDNotFoundError)
+      return res.status(404).send({ error: auth_user.message });
+    if (auth_user instanceof Auth0LimitError)
+      return res.status(429).send({ error: auth_user.message });
 
     //Twitterインスタンス化
     const client = new Twitter({
@@ -208,22 +212,39 @@ async function fetchUserDetail(users: DbUser[]) {
   return responce_users;
 }
 
-async function getAuthUser(auth0_id: string) {
+class UserIDNotFoundError extends Error {}
+class Auth0LimitError extends Error {}
+type AuthUser = {
+  access_token: string;
+  access_token_secret: string;
+  user_id: string;
+};
+
+async function getAuthUser(
+  auth0_id: string,
+  retry = true
+): Promise<AuthUser | UserIDNotFoundError | Auth0LimitError> {
   //認証したユーザのアクセストークンを取得
-  console.log(AUTH0_KEYSET);
+  // console.log(AUTH0_KEYSET);
   const ManagementClient = auth0.ManagementClient;
   const management = new ManagementClient({
     domain: AUTH0_DOMAIN,
     ...AUTH0_KEYSET,
   });
-  const user = await management.getUser({ id: auth0_id });
-  if (!user.identities) throw new Error("User identities not found");
-  const identity = JSON.parse(JSON.stringify(user.identities[0]));
-  return {
-    access_token: identity.access_token as string,
-    access_token_secret: identity.access_token_secret as string,
-    user_id: identity.user_id as string,
-  };
+  try {
+    const user = await management.getUser({ id: auth0_id });
+    if (!user.identities)
+      return new UserIDNotFoundError("User identities not found");
+    const identity = JSON.parse(JSON.stringify(user.identities[0]));
+    return {
+      access_token: identity.access_token as string,
+      access_token_secret: identity.access_token_secret as string,
+      user_id: identity.user_id as string,
+    };
+  } catch (error) {
+    if (retry) return getAuthUser(auth0_id, false);
+    return new Auth0LimitError(error.message);
+  }
 }
 
 router.post("/follow", checkJwt, async (req, res) => {
@@ -232,44 +253,51 @@ router.post("/follow", checkJwt, async (req, res) => {
       .status(403)
       .send({ error: "token does not contain user information" });
   const auth_user = await getAuthUser(req.user.sub);
-  if (!auth_user)
-    return res.status(500).send({ error: "management api error" });
+  if (auth_user instanceof UserIDNotFoundError)
+    return res.status(404).send({ error: auth_user.message });
+  if (auth_user instanceof Auth0LimitError)
+    return res.status(429).send({ error: auth_user.message });
+
   const client = new Twitter({
     ...CONSUMER_KEYSET,
     access_token_key: auth_user.access_token ?? "ACCESS_TOKEN_KEY",
     access_token_secret: auth_user.access_token_secret ?? "ACCESS_TOKEN_KEY",
   });
 
-  client
-    .post("friendships/create", {
+  try {
+    const result = await client.post("friendships/create", {
       user_id: req.body.user_id,
-    })
-    .catch((e) => {
-      console.log(e);
-      res.status(500).send(e);
-    })
-    .then(async (result) => {
-      if (result instanceof Array) {
-        //エラーオブジェクトの配列が返された場合
-        const error = result[0] as { code: number; message: string };
-        if (error.code === 162) return res.status(403).send(error); //対象のユーザにブロックされている
-        if (error.code === 88) return res.status(429).send(error); //レート制限
-        return res.status(500).send(error); //その他のエラー
-      }
-      console.log(result);
-      res.status(201).send();
-      //DBに使用状況を登録
-      const connection = await mysql2.createConnection(DB_SETTING);
-      await connection.connect();
-      connection
-        .execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
-          auth_user.user_id,
-          req.body.user_id,
-          dayjs().format("YYYY-MM-DD HH:MM:ss"),
-        ])
-        .catch((err) => console.log(err));
-      connection.end();
     });
+    if (result instanceof Array) {
+      //エラーオブジェクトの配列が返された場合
+      const error = result[0] as { code: number; message: string };
+      if (error.code === 162) return res.status(403).send(error); //対象のユーザにブロックされている
+      if (error.code === 88) return res.status(429).send(error); //APIレート制限
+      console.warn("other error occured");
+      return res.status(500).send(error); //その他のエラー
+    }
+    console.log(`${auth_user.user_id} followed ${req.body.user_id}`);
+    res.status(201).send();
+    //DBに使用状況を登録
+    const connection = await mysql2.createConnection(DB_SETTING);
+    await connection.connect();
+    connection
+      .execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
+        auth_user.user_id,
+        req.body.user_id,
+        dayjs().format("YYYY-MM-DD HH:MM:ss"),
+      ])
+      .catch((err) => console.log(err));
+    connection.end();
+  } catch (error) {
+    if (error instanceof Array && error[0].code == 161) {
+      //フォローレート制限
+      console.warn(`${auth_user.user_id} failed following ${req.body.user_id}`);
+      return res.status(429).send(error[0]);
+    }
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
 });
 
 //cron用 ツイートを検索してDBに追加する
