@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 const DEFAULT_RANGE_MONTHS = 6;
-const FOLLOWALL_INTERVAL_MS = 250;
+const FOLLOWALL_INTERVAL_MS = 500;
 
 type Prop = {
   auth0: Auth0ContextInterface;
@@ -82,7 +82,7 @@ class Search extends React.Component<Prop, State> {
       await axios.post(
         `${SERVER_URL}/users/follow`,
         { user_id: user.id },
-        { headers: { authorization: `Bearer ${token}` } }
+        { headers: { authorization: `Bearer ${token}` }, timeout: 4000 }
       );
       this.setState({
         users: this.state.users.map((user2) => {
