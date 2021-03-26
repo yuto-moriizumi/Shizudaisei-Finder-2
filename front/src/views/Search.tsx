@@ -7,6 +7,10 @@ import UserCard from "../components/UserCard";
 import axios from "axios";
 import dayjs from "dayjs";
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+const DEFAULT_RANGE_MONTHS = 6;
+const FOLLOWALL_INTERVAL_MS = 250;
+
 type Prop = {
   auth0: Auth0ContextInterface;
 };
@@ -21,18 +25,14 @@ type State = {
   search_failed: boolean;
   is_search_empty: boolean;
   show_warning: boolean;
+  reached_follow_limit: boolean;
 };
-
-const SERVER_URL = process.env.REACT_APP_SERVER_URL;
-// const AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE;
-// if (!(SERVER_URL && AUDIENCE)) new Error("env invalid");
-
 class Search extends React.Component<Prop, State> {
   private excl_kws = ["学環", "人文", "教育", "理学部", "農学部", "情報学部", "工学部"];
   private excl_names = ["サークル"];
   state = {
     users: new Array<User>(),
-    from: dayjs().subtract(6, "month").format("YYYY-MM-DD"), //デフォルトは半年前まで
+    from: dayjs().subtract(DEFAULT_RANGE_MONTHS, "month").format("YYYY-MM-DD"), //デフォルトは半年前まで
     to: dayjs().format("YYYY-MM-DD"),
     incl_flw: false,
     excl_kws: new Array<string>(),
@@ -41,6 +41,7 @@ class Search extends React.Component<Prop, State> {
     search_failed: false,
     is_search_empty: false,
     show_warning: true,
+    reached_follow_limit: false,
   };
 
   private async search() {
@@ -77,41 +78,33 @@ class Search extends React.Component<Prop, State> {
       }),
     });
     const token = await this.props.auth0.getAccessTokenSilently();
-    axios
-      .post(
+    try {
+      await axios.post(
         `${SERVER_URL}/users/follow`,
         { user_id: user.id },
-        {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .then(() =>
-        this.setState({
-          users: this.state.users.map((user2) => {
-            if (user2 === user) user2.is_following = true;
-            return user2;
-          }),
-        })
-      )
-      .catch((e) => {
-        this.setState({
-          users: this.state.users.map((user2) => {
-            if (user2 === user) user2.follow_failed = true;
-            return user2;
-          }),
-        });
-        console.log(e);
-      })
-      .finally(() =>
-        this.setState({
-          users: this.state.users.map((user2) => {
-            if (user2 === user) user2.is_requesting = false;
-            return user2;
-          }),
-        })
+        { headers: { authorization: `Bearer ${token}` } }
       );
+      this.setState({
+        users: this.state.users.map((user2) => {
+          if (user2 === user) user2.is_following = true;
+          return user2;
+        }),
+      });
+    } catch (error) {
+      if (error.response.status === 429) this.setState({ reached_follow_limit: true });
+      this.setState({
+        users: this.state.users.map((user2) => {
+          if (user2 === user) user2.follow_failed = true;
+          return user2;
+        }),
+      });
+    }
+    this.setState({
+      users: this.state.users.map((user2) => {
+        if (user2 === user) user2.is_requesting = false;
+        return user2;
+      }),
+    });
   }
 
   private getCardsWithSeparator(users: User[]) {
@@ -139,7 +132,7 @@ class Search extends React.Component<Prop, State> {
   private async followAll() {
     for (const user of this.state.users) {
       this.follow(user);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, FOLLOWALL_INTERVAL_MS));
     }
   }
 
@@ -271,6 +264,14 @@ class Search extends React.Component<Prop, State> {
             show={this.state.search_failed}
           >
             サーバエラー。少し時間を空ければ治るかもしれません。
+          </Alert>
+          <Alert
+            variant="warning"
+            dismissible
+            onClose={() => this.setState({ reached_follow_limit: false })}
+            show={this.state.reached_follow_limit}
+          >
+            フォロー制限に達しました。時間を開けてから再度フォローを行ってください。
           </Alert>
           <Alert
             variant="info"

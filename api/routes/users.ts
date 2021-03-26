@@ -271,7 +271,6 @@ router.post("/follow", checkJwt, async (req, res) => {
     if (result instanceof Array) {
       //エラーオブジェクトの配列が返された場合
       const error = result[0] as { code: number; message: string };
-      if (error.code === 162) return res.status(403).send(error); //対象のユーザにブロックされている
       if (error.code === 88) return res.status(429).send(error); //APIレート制限
       if (error.code === 326) return res.status(423).send(error); //アカウントがロックされている
       console.warn("other error occured");
@@ -291,13 +290,13 @@ router.post("/follow", checkJwt, async (req, res) => {
       .catch((err) => console.log(err));
     connection.end();
   } catch (error) {
-    if (error instanceof Array && error[0].code == 161) {
-      //フォローレート制限
-      console.warn(`${auth_user.user_id} failed following ${req.body.user_id}`);
-      return res.status(429).send(error[0]);
+    if (error instanceof Array) {
+      if (error[0].code === 160) return res.status(202).send(error[0]); //リクエスト承認待ち
+      if (error[0].code == 161) return res.status(429).send(error[0]); //フォローレート制限
+      if (error[0].code === 162) return res.status(403).send(error[0]); //対象のユーザにブロックされている
     }
     console.error(error);
-    res.status(500).send({ error: error.message });
+    res.status(500).send({ error: error });
   }
 });
 
