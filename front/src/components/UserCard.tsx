@@ -2,14 +2,49 @@ import React from "react";
 import { Card, Col, Row, Image, Button, Spinner, Container } from "react-bootstrap";
 import User from "../utils/User";
 import dayjs from "dayjs";
+import { ButtonVariant } from "react-bootstrap/esm/types";
 
 type Props = {
   user: User;
   onFollow?: () => void;
 };
+abstract class ButtonState {
+  abstract display: JSX.Element;
+  abstract variant: ButtonVariant;
+  abstract disabled: boolean;
+}
+class BeforeFollowState implements ButtonState {
+  display = (<>フォロー</>);
+  variant = "primary";
+  disabled = false;
+}
+class FollowingState implements ButtonState {
+  display = (<Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />);
+  variant = "primary";
+  disabled = true;
+}
+class FollowedState implements ButtonState {
+  display = (<>フォロー済</>);
+  variant = "primary";
+  disabled = true;
+}
+class FollowFailedState implements ButtonState {
+  display = (<>フォロー失敗</>);
+  variant = "danger";
+  disabled = true;
+}
+
 export default class UserCard extends React.Component<Props, {}> {
   render() {
     const user = this.props.user;
+
+    //フォロー試行状態を判別する
+    let buttonState: ButtonState;
+    if (user.is_requesting) buttonState = new FollowingState();
+    else if (user.follow_failed) buttonState = new FollowFailedState();
+    else if (user.is_following) buttonState = new FollowedState();
+    else buttonState = new BeforeFollowState();
+
     return (
       <Card key={user.id} className="mb-4">
         <Card.Header className="p-2">
@@ -35,23 +70,14 @@ export default class UserCard extends React.Component<Props, {}> {
             </Col>
             {this.props.onFollow ? (
               <Col xs="auto" className="px-0 ml-auto">
-                {user.is_requesting ? ( //フォローリクエスト送信中であれば
-                  <Button size="sm" disabled>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
-                  </Button>
-                ) : user.follow_failed ? ( //フォローリクエストが失敗した場合は
-                  <Button size="sm" variant="danger" disabled>
-                    フォロー失敗
-                  </Button>
-                ) : user.is_following ? (
-                  <Button size="sm" disabled>
-                    フォロー済
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={this.props.onFollow.bind(this)}>
-                    フォロー
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant={buttonState.variant}
+                  disabled={buttonState.disabled}
+                  onClick={buttonState.disabled ? undefined : this.props.onFollow.bind(this)}
+                >
+                  {buttonState.display}
+                </Button>
               </Col>
             ) : (
               ""
