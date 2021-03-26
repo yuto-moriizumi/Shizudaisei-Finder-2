@@ -273,6 +273,7 @@ router.post("/follow", checkJwt, async (req, res) => {
       const error = result[0] as { code: number; message: string };
       if (error.code === 162) return res.status(403).send(error); //対象のユーザにブロックされている
       if (error.code === 88) return res.status(429).send(error); //APIレート制限
+      if (error.code === 326) return res.status(423).send(error); //アカウントがロックされている
       console.warn("other error occured");
       return res.status(500).send(error); //その他のエラー
     }
