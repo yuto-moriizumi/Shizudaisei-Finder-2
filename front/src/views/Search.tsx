@@ -20,6 +20,7 @@ type State = {
   is_searching: boolean;
   search_failed: boolean;
   is_search_empty: boolean;
+  show_warning: boolean;
 };
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
@@ -39,6 +40,7 @@ class Search extends React.Component<Prop, State> {
     is_searching: false,
     search_failed: false,
     is_search_empty: false,
+    show_warning: true,
   };
 
   private async search() {
@@ -132,6 +134,13 @@ class Search extends React.Component<Prop, State> {
       );
     }
     return result;
+  }
+
+  private async followAll() {
+    for (const user of this.state.users) {
+      this.follow(user);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
 
   render() {
@@ -241,15 +250,20 @@ class Search extends React.Component<Prop, State> {
           </Form>
           <Row className="mb-2">
             <h1 className="mr-auto">検索結果</h1>
-            <Button
-              size="lg"
-              onClick={(_) => {
-                this.state.users.forEach((user) => this.follow(user));
-              }}
-            >
+            <Button size="lg" onClick={this.followAll.bind(this)}>
               一括フォロー
             </Button>
           </Row>
+          <Alert
+            variant="warning"
+            dismissible
+            onClose={() => this.setState({ show_warning: false })}
+            show={this.state.show_warning}
+          >
+            短時間に大量フォローすると、アカウントがロックされる場合があります。
+            <br />
+            Twitterアカウントに復旧用のメールアドレスや電話番号を登録しておきましょう。
+          </Alert>
           <Alert
             variant="danger"
             dismissible
