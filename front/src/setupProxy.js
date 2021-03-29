@@ -1,4 +1,4 @@
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 // var restream = function (proxyReq, req, res, options) {
 //   if (req.body) {

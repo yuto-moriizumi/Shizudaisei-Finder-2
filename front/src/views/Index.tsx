@@ -1,10 +1,10 @@
-import React from "react";
-import { Button, CardDeck, Container, Jumbotron } from "react-bootstrap";
-import { Link } from "react-router-dom";
-import axios from "axios";
-import User from "../utils/User";
-import UserCard from "../components/UserCard";
-import getResponsiveElements from "../utils/getResponsiveElements";
+import React from 'react';
+import { Button, CardDeck, Container, Jumbotron } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import User from '../utils/User';
+import UserCard from '../components/UserCard';
+import getResponsiveElements from '../utils/getResponsiveElements';
 
 interface State {
   users: User[];
@@ -12,19 +12,19 @@ interface State {
 }
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
-if (!SERVER_URL) new Error("SERVER_URL must be specified");
+if (!SERVER_URL) new Error('SERVER_URL must be specified');
 
 export default class Index extends React.Component<{}, State> {
   state = { users: new Array<User>(), isLoading: false };
-  private next = "";
+  private next = '';
   private handleScrollBinded = this.handleScroll.bind(this);
 
   componentDidMount() {
     this.getUsers(0);
-    window.addEventListener("scroll", this.handleScrollBinded);
+    window.addEventListener('scroll', this.handleScrollBinded);
   }
   componentWillUnmount() {
-    window.removeEventListener("scroll", this.handleScrollBinded);
+    window.removeEventListener('scroll', this.handleScrollBinded);
   }
 
   private getUsers(offset: number) {
@@ -51,7 +51,10 @@ export default class Index extends React.Component<{}, State> {
 
   private cron() {
     axios
-      .get(`${SERVER_URL}/users/update?type=fullarchive` + (this.next === "" ? "" : `&next=${this.next}`))
+      .get(
+        `${SERVER_URL}/users/update?type=fullarchive` +
+          (this.next === '' ? '' : `&next=${this.next}`)
+      )
       .then((res) => {
         this.next = res.data.next;
         this.cron();
@@ -65,7 +68,8 @@ export default class Index extends React.Component<{}, State> {
         <Jumbotron className="text-center">
           <h1 className="display-1">仲間を、見つけよう！</h1>
           <p className="h3 mb-3">
-            Shizudaisei Finder 2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
+            Shizudaisei Finder
+            2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
           </p>
           <Link to="search">
             <Button size="lg">検索する</Button>
@@ -81,7 +85,11 @@ export default class Index extends React.Component<{}, State> {
         </Jumbotron>
         <Container fluid className="px-4 no-gutters">
           <CardDeck>
-            {getResponsiveElements(this.state.users.map((user) => <UserCard key={user.id} user={user} />))}
+            {getResponsiveElements(
+              this.state.users.map((user) => (
+                <UserCard key={user.id} user={user} />
+              ))
+            )}
           </CardDeck>
         </Container>
       </React.Fragment>

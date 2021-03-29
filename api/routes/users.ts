@@ -1,15 +1,15 @@
-import express from "express";
-import jwt from "express-jwt";
-import jwksRsa from "jwks-rsa";
-import mysql2 from "mysql2/promise";
-import dayjs from "dayjs";
-import Twitter from "twitter";
-import DbUser, { TwitterResponseUser, UserTweet } from "../User";
-import auth0 from "auth0";
+import express from 'express';
+import jwt from 'express-jwt';
+import jwksRsa from 'jwks-rsa';
+import mysql2 from 'mysql2/promise';
+import dayjs from 'dayjs';
+import Twitter from 'twitter';
+import DbUser, { TwitterResponseUser, UserTweet } from '../User';
+import auth0 from 'auth0';
 
 const router = express.Router();
 
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN ?? "AUTH0_DOMAIN";
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN ?? 'AUTH0_DOMAIN';
 const AUTH0_FQDN = `https://${AUTH0_DOMAIN}/`;
 
 const DB_SETTING = {
@@ -19,21 +19,21 @@ const DB_SETTING = {
   database: process.env.RDS_DB_NAME,
 };
 const CONSUMER_KEYSET = {
-  consumer_key: process.env.CONSUMER_KEY ?? "CONSUMER_KEY",
-  consumer_secret: process.env.CONSUMER_SECRET ?? "CONSUMER_SECRET",
+  consumer_key: process.env.CONSUMER_KEY ?? 'CONSUMER_KEY',
+  consumer_secret: process.env.CONSUMER_SECRET ?? 'CONSUMER_SECRET',
 };
 const TWITTER_KEYSET = {
   ...CONSUMER_KEYSET,
-  bearer_token: process.env.BEARER_TOKEN ?? "BEARER_TOKEN",
+  bearer_token: process.env.BEARER_TOKEN ?? 'BEARER_TOKEN',
 };
 const AUTH0_KEYSET = {
-  clientId: process.env.CLIENT_ID ?? "CLIENT_ID",
-  clientSecret: process.env.CLIENT_SECRET ?? "CLIENT_SECRET",
+  clientId: process.env.CLIENT_ID ?? 'CLIENT_ID',
+  clientSecret: process.env.CLIENT_SECRET ?? 'CLIENT_SECRET',
 };
 
 // ユーザを100件取得
-router.get("/", async (req, res) => {
-  const offset = parseInt((req.query.offset as string) ?? "0");
+router.get('/', async (req, res) => {
+  const offset = parseInt((req.query.offset as string) ?? '0');
   const connection = await mysql2.createConnection(DB_SETTING);
   try {
     await connection.connect();
@@ -56,11 +56,11 @@ const checkJwt = jwt({
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: AUTH0_FQDN + ".well-known/jwks.json",
+    jwksUri: AUTH0_FQDN + '.well-known/jwks.json',
   }),
   audience: process.env.AUTH0_AUDIENCE,
   issuer: AUTH0_FQDN,
-  algorithms: ["RS256"],
+  algorithms: ['RS256'],
 });
 
 // router.use(checkJwt);
@@ -78,11 +78,11 @@ declare global {
 }
 
 // 購読一覧をstar降順に取得する
-router.get("/search", checkJwt, async (req, res) => {
+router.get('/search', checkJwt, async (req, res) => {
   if (!req.user)
     return res
       .status(403)
-      .send({ error: "token does not contain user information" });
+      .send({ error: 'token does not contain user information' });
 
   //検索オプションを成形
   type SearchOptions = {
@@ -101,22 +101,22 @@ router.get("/search", checkJwt, async (req, res) => {
     await connection.connect();
 
     //クエリを構築する
-    let QUERY = "SELECT * FROM users WHERE created_at BETWEEN ? AND ?";
+    let QUERY = 'SELECT * FROM users WHERE created_at BETWEEN ? AND ?';
     if (options.excl_kws)
       //除外キーワードが指定されている場合は除外
       QUERY += ` AND NOT content REGEXP('${options.excl_kws
         .map((kw) => `.*${kw}.*`)
-        .join("|")}')`;
+        .join('|')}')`;
 
     const from = dayjs(options.from);
     const to = dayjs(options.to);
 
     //クエリ実行
     const result_set = await connection.execute(
-      QUERY + " ORDER BY created_at DESC",
+      QUERY + ' ORDER BY created_at DESC',
       [
-        from.isValid() ? from.format("YYYY-MM-DD") : "2000-01-01",
-        to.isValid() ? to.format("YYYY-MM-DD") : "2050-01-01",
+        from.isValid() ? from.format('YYYY-MM-DD') : '2000-01-01',
+        to.isValid() ? to.format('YYYY-MM-DD') : '2050-01-01',
       ]
     );
     if (!result_set) {
@@ -137,19 +137,19 @@ router.get("/search", checkJwt, async (req, res) => {
     //Twitterインスタンス化
     const client = new Twitter({
       ...CONSUMER_KEYSET,
-      access_token_key: auth_user.access_token ?? "ACCESS_TOKEN_KEY",
-      access_token_secret: auth_user.access_token_secret ?? "ACCESS_TOKEN_KEY",
+      access_token_key: auth_user.access_token ?? 'ACCESS_TOKEN_KEY',
+      access_token_secret: auth_user.access_token_secret ?? 'ACCESS_TOKEN_KEY',
     });
 
     //フォローしているユーザID一覧を取得
-    const followings = await client.get("friends/ids", {
+    const followings = await client.get('friends/ids', {
       user_id: auth_user.user_id,
       count: 5000,
       stringify_ids: true,
     });
     const following_ids = followings.ids as Array<string>;
 
-    if (options.incl_flw === "false")
+    if (options.incl_flw === 'false')
       //フォローしているユーザを除外する場合
       users = users.filter((user) => following_ids.indexOf(user.id) === -1);
 
@@ -180,11 +180,11 @@ async function fetchUserDetail(users: DbUser[]) {
   if (users.length === 0) return [];
   const client = new Twitter(TWITTER_KEYSET);
   const detailed_users = await client
-    .get("users/lookup", {
+    .get('users/lookup', {
       user_id: users
         .slice(0, 100)
         .map((user) => user.id)
-        .join(","),
+        .join(','),
       include_entities: false,
     })
     .catch((e) => {
@@ -234,7 +234,7 @@ async function getAuthUser(
   try {
     const user = await management.getUser({ id: auth0_id });
     if (!user.identities)
-      return new UserIDNotFoundError("User identities not found");
+      return new UserIDNotFoundError('User identities not found');
     const identity = JSON.parse(JSON.stringify(user.identities[0]));
     return {
       access_token: identity.access_token as string,
@@ -247,11 +247,11 @@ async function getAuthUser(
   }
 }
 
-router.post("/follow", checkJwt, async (req, res) => {
+router.post('/follow', checkJwt, async (req, res) => {
   if (!req.user)
     return res
       .status(403)
-      .send({ error: "token does not contain user information" });
+      .send({ error: 'token does not contain user information' });
   const auth_user = await getAuthUser(req.user.sub);
   if (auth_user instanceof UserIDNotFoundError)
     return res.status(404).send({ error: auth_user.message });
@@ -260,12 +260,12 @@ router.post("/follow", checkJwt, async (req, res) => {
 
   const client = new Twitter({
     ...CONSUMER_KEYSET,
-    access_token_key: auth_user.access_token ?? "ACCESS_TOKEN_KEY",
-    access_token_secret: auth_user.access_token_secret ?? "ACCESS_TOKEN_KEY",
+    access_token_key: auth_user.access_token ?? 'ACCESS_TOKEN_KEY',
+    access_token_secret: auth_user.access_token_secret ?? 'ACCESS_TOKEN_KEY',
   });
 
   try {
-    const result = await client.post("friendships/create", {
+    const result = await client.post('friendships/create', {
       user_id: req.body.user_id,
     });
     if (result instanceof Array) {
@@ -273,7 +273,7 @@ router.post("/follow", checkJwt, async (req, res) => {
       const error = result[0] as { code: number; message: string };
       if (error.code === 88) return res.status(429).send(error); //APIレート制限
       if (error.code === 326) return res.status(423).send(error); //アカウントがロックされている
-      console.warn("other error occured");
+      console.warn('other error occured');
       return res.status(500).send(error); //その他のエラー
     }
     console.log(`${auth_user.user_id} followed ${req.body.user_id}`);
@@ -282,10 +282,10 @@ router.post("/follow", checkJwt, async (req, res) => {
     await connection.connect();
     res.status(201).send(); //lambda用に,res以後にawait含む文が内容にしておく
     connection
-      .execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
+      .execute('INSERT IGNORE friendships VALUE (?, ?, ?)', [
         auth_user.user_id,
         req.body.user_id,
-        dayjs().format("YYYY-MM-DD HH:MM:ss"),
+        dayjs().format('YYYY-MM-DD HH:MM:ss'),
       ])
       .catch((err) => console.log(err));
     connection.end();
@@ -301,34 +301,34 @@ router.post("/follow", checkJwt, async (req, res) => {
 });
 
 //cron用 ツイートを検索してDBに追加する
-router.get("/update", async (req, res) => {
+router.get('/update', async (req, res) => {
   try {
     const API_TYPE = req.query.type; //"30day" or "fullarchive"
-    const IS_PREMIUM_API = API_TYPE === "fullarchive" || API_TYPE === "30day";
-    console.log("type", API_TYPE);
+    const IS_PREMIUM_API = API_TYPE === 'fullarchive' || API_TYPE === '30day';
+    console.log('type', API_TYPE);
     const NEXT = req.query.next; //for pagination, provided by api responce
     const client = new Twitter(TWITTER_KEYSET);
     const endpoint =
-      API_TYPE === "fullarchive"
-        ? "tweets/search/fullarchive/test2"
-        : API_TYPE === "30day"
-        ? "tweets/search/30day/test"
-        : "search/tweets";
+      API_TYPE === 'fullarchive'
+        ? 'tweets/search/fullarchive/test2'
+        : API_TYPE === '30day'
+        ? 'tweets/search/30day/test'
+        : 'search/tweets';
     let request = {};
     if (IS_PREMIUM_API) {
       request = {
-        query: "#春から静大",
+        query: '#春から静大',
         toDate: 202102200000,
       };
       if (NEXT) {
-        Object.defineProperty(request, "next", {
+        Object.defineProperty(request, 'next', {
           value: NEXT,
         });
       }
     } else {
       request = {
-        q: "#春から静大",
-        result_type: "recent",
+        q: '#春から静大',
+        result_type: 'recent',
         count: 100,
         include_entities: false,
       };
@@ -351,7 +351,7 @@ router.get("/update", async (req, res) => {
           name: tweet.user.name,
           tweet_id: tweet.id_str,
           content: tweet.text,
-          created_at: dayjs(tweet.created_at).format("YYYY-MM-DD HH:mm:ss"),
+          created_at: dayjs(tweet.created_at).format('YYYY-MM-DD HH:mm:ss'),
         };
       });
 
@@ -363,7 +363,7 @@ router.get("/update", async (req, res) => {
     const error = new Array<{}>();
     users.forEach((user) => {
       connection
-        .execute("INSERT users VALUES (?, ?, ?, ?)", [
+        .execute('INSERT users VALUES (?, ?, ?, ?)', [
           user.id,
           user.tweet_id,
           user.content,
@@ -374,12 +374,12 @@ router.get("/update", async (req, res) => {
           success.push({ user_id: user.id, name: user.name });
         })
         .catch((err: { code: string; sqlMessage: string }) => {
-          if (err.code === "ER_DUP_ENTRY") {
+          if (err.code === 'ER_DUP_ENTRY') {
             // console.log("skip", { user_id: user.id, name: user.name });
             skip.push({ user_id: user.id, name: user.name });
             return;
           }
-          console.log("error", { user_id: user.id, name: user.name });
+          console.log('error', { user_id: user.id, name: user.name });
           error.push({
             code: err.code,
             message: err.sqlMessage,

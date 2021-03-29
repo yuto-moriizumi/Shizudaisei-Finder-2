@@ -1,8 +1,16 @@
-import React from "react";
-import { Card, Col, Row, Image, Button, Spinner, Container } from "react-bootstrap";
-import User from "../utils/User";
-import dayjs from "dayjs";
-import { ButtonVariant } from "react-bootstrap/esm/types";
+import React from 'react';
+import {
+  Card,
+  Col,
+  Row,
+  Image,
+  Button,
+  Spinner,
+  Container,
+} from 'react-bootstrap';
+import User from '../utils/User';
+import dayjs from 'dayjs';
+import { ButtonVariant } from 'react-bootstrap/esm/types';
 
 type Props = {
   user: User;
@@ -15,22 +23,30 @@ abstract class ButtonState {
 }
 class BeforeFollowState implements ButtonState {
   display = (<>フォロー</>);
-  variant = "primary";
+  variant = 'primary';
   disabled = false;
 }
 class FollowingState implements ButtonState {
-  display = (<Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />);
-  variant = "primary";
+  display = (
+    <Spinner
+      as="span"
+      animation="border"
+      size="sm"
+      role="status"
+      aria-hidden="true"
+    />
+  );
+  variant = 'primary';
   disabled = true;
 }
 class FollowedState implements ButtonState {
   display = (<>フォロー済</>);
-  variant = "primary";
+  variant = 'primary';
   disabled = true;
 }
 class FollowFailedState implements ButtonState {
   display = (<>フォロー失敗</>);
-  variant = "danger";
+  variant = 'danger';
   disabled = true;
 }
 
@@ -51,10 +67,13 @@ export default class UserCard extends React.Component<Props, {}> {
           <Container fluid>
             <Row>
               <Col className="px-0" xs="2">
-                <Image fluid src={user.img_url} style={{ maxHeight: "48px" }} />
+                <Image fluid src={user.img_url} style={{ maxHeight: '48px' }} />
               </Col>
               <Col className="pl-1 pr-0" xs="10">
-                <Card.Link href={"https://twitter.com/" + user.screen_name} target="_blank">
+                <Card.Link
+                  href={'https://twitter.com/' + user.screen_name}
+                  target="_blank"
+                >
                   <h6 className="mb-0">{user.name}</h6>
                   <small>@{user.screen_name}</small>
                 </Card.Link>
@@ -66,7 +85,7 @@ export default class UserCard extends React.Component<Props, {}> {
         <Card.Footer>
           <Row className="px-2">
             <Col xs="auto" className="px-0">
-              {dayjs(user.created_at).format("YYYY-MM-DD")}
+              {dayjs(user.created_at).format('YYYY-MM-DD')}
             </Col>
             {this.props.onFollow ? (
               <Col xs="auto" className="px-0 ml-auto">
@@ -74,13 +93,17 @@ export default class UserCard extends React.Component<Props, {}> {
                   size="sm"
                   variant={buttonState.variant}
                   disabled={buttonState.disabled}
-                  onClick={buttonState.disabled ? undefined : this.props.onFollow.bind(this)}
+                  onClick={
+                    buttonState.disabled
+                      ? undefined
+                      : this.props.onFollow.bind(this)
+                  }
                 >
                   {buttonState.display}
                 </Button>
               </Col>
             ) : (
-              ""
+              ''
             )}
           </Row>
         </Card.Footer>

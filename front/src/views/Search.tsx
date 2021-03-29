@@ -1,12 +1,20 @@
-import React from "react";
-import { Auth0ContextInterface, withAuth0 } from "@auth0/auth0-react";
-import { Alert, Button, CardDeck, Container, Form, Row, Spinner } from "react-bootstrap";
-import { Col } from "react-bootstrap";
-import User from "../utils/User";
-import UserCard from "../components/UserCard";
-import axios from "axios";
-import dayjs from "dayjs";
-import getResponsiveElements from "../utils/getResponsiveElements";
+import React from 'react';
+import { Auth0ContextInterface, withAuth0 } from '@auth0/auth0-react';
+import {
+  Alert,
+  Button,
+  CardDeck,
+  Container,
+  Form,
+  Row,
+  Spinner,
+} from 'react-bootstrap';
+import { Col } from 'react-bootstrap';
+import User from '../utils/User';
+import UserCard from '../components/UserCard';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import getResponsiveElements from '../utils/getResponsiveElements';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 const DEFAULT_RANGE_MONTHS = 6;
@@ -29,12 +37,20 @@ type State = {
   reached_follow_limit: boolean;
 };
 class Search extends React.Component<Prop, State> {
-  private excl_kws = ["学環", "人文", "教育", "理学部", "農学部", "情報学部", "工学部"];
-  private excl_names = ["サークル"];
+  private excl_kws = [
+    '学環',
+    '人文',
+    '教育',
+    '理学部',
+    '農学部',
+    '情報学部',
+    '工学部',
+  ];
+  private excl_names = ['サークル'];
   state = {
     users: new Array<User>(),
-    from: dayjs().subtract(DEFAULT_RANGE_MONTHS, "month").format("YYYY-MM-DD"), //デフォルトは半年前まで
-    to: dayjs().format("YYYY-MM-DD"),
+    from: dayjs().subtract(DEFAULT_RANGE_MONTHS, 'month').format('YYYY-MM-DD'), //デフォルトは半年前まで
+    to: dayjs().format('YYYY-MM-DD'),
     incl_flw: false,
     excl_kws: new Array<string>(),
     excl_names: new Array<string>(),
@@ -61,7 +77,12 @@ class Search extends React.Component<Prop, State> {
           authorization: `Bearer ${token}`,
         },
       })
-      .then((res) => this.setState({ users: res.data, is_search_empty: res.data.length === 0 }))
+      .then((res) =>
+        this.setState({
+          users: res.data,
+          is_search_empty: res.data.length === 0,
+        })
+      )
       .catch((err) => {
         this.setState({ search_failed: true });
         console.log(err);
@@ -92,7 +113,8 @@ class Search extends React.Component<Prop, State> {
         }),
       });
     } catch (error) {
-      if (error.response.status === 429) this.setState({ reached_follow_limit: true });
+      if (error.response.status === 429)
+        this.setState({ reached_follow_limit: true });
       this.setState({
         users: this.state.users.map((user2) => {
           if (user2 === user) user2.follow_failed = true;
@@ -111,7 +133,9 @@ class Search extends React.Component<Prop, State> {
   private async followAll() {
     for (const user of this.state.users) {
       this.follow(user);
-      await new Promise((resolve) => setTimeout(resolve, FOLLOWALL_INTERVAL_MS));
+      await new Promise((resolve) =>
+        setTimeout(resolve, FOLLOWALL_INTERVAL_MS)
+      );
     }
   }
 
@@ -136,7 +160,9 @@ class Search extends React.Component<Prop, State> {
                 <Form.Control
                   type="date"
                   value={this.state.to}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ to: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    this.setState({ to: e.target.value })
+                  }
                 />
               </Col>
               <Form.Label className="ml-3 mr-4">まで</Form.Label>
@@ -156,7 +182,7 @@ class Search extends React.Component<Prop, State> {
                 return (
                   <Form.Check
                     key={kw}
-                    id={"excl_kws" + kw}
+                    id={'excl_kws' + kw}
                     inline
                     type="checkbox"
                     label={kw}
@@ -164,7 +190,9 @@ class Search extends React.Component<Prop, State> {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       if (this.state.excl_kws.includes(kw))
                         this.setState({
-                          excl_kws: this.state.excl_kws.filter((kwd) => kwd !== kw),
+                          excl_kws: this.state.excl_kws.filter(
+                            (kwd) => kwd !== kw
+                          ),
                         });
                       else {
                         const excl_kws = this.state.excl_kws.slice();
@@ -178,14 +206,16 @@ class Search extends React.Component<Prop, State> {
                 );
               })}
             </Form.Row>
-            <Form.Text>チェックを外すとその学部と思われるユーザを除外します（正確ではありません）</Form.Text>
+            <Form.Text>
+              チェックを外すとその学部と思われるユーザを除外します（正確ではありません）
+            </Form.Text>
             <Form.Row>
               <Form.Label className="mr-5">名前</Form.Label>
               {this.excl_names.map((kw) => {
                 return (
                   <Form.Check
                     key={kw}
-                    id={"excl_name" + kw}
+                    id={'excl_name' + kw}
                     inline
                     type="checkbox"
                     label={kw}
@@ -193,7 +223,9 @@ class Search extends React.Component<Prop, State> {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       if (this.state.excl_names.includes(kw))
                         this.setState({
-                          excl_names: this.state.excl_names.filter((kwd) => kwd !== kw),
+                          excl_names: this.state.excl_names.filter(
+                            (kwd) => kwd !== kw
+                          ),
                         });
                       else {
                         const excl_names = this.state.excl_names.slice();
@@ -207,11 +239,18 @@ class Search extends React.Component<Prop, State> {
                 );
               })}
             </Form.Row>
-            <Form.Text>チェックを外すとその名前が含まれるユーザを除外します</Form.Text>
+            <Form.Text>
+              チェックを外すとその名前が含まれるユーザを除外します
+            </Form.Text>
             <Container className="mt-3 text-center">
               {this.state.is_searching ? (
                 <Button className="col-8" disabled>
-                  <Spinner as="span" animation="border" role="status" aria-hidden="true" />
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    role="status"
+                    aria-hidden="true"
+                  />
                 </Button>
               ) : (
                 <Button className="col-8" onClick={this.search.bind(this)}>
@@ -265,7 +304,11 @@ class Search extends React.Component<Prop, State> {
           <CardDeck>
             {getResponsiveElements(
               this.state.users.map((user) => (
-                <UserCard key={user.id} user={user} onFollow={() => this.follow(user)} />
+                <UserCard
+                  key={user.id}
+                  user={user}
+                  onFollow={() => this.follow(user)}
+                />
               ))
             )}
           </CardDeck>

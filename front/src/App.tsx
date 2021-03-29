@@ -1,12 +1,12 @@
-import React from "react";
-import { Link, Route } from "react-router-dom";
-import Index from "./views/Index";
-import { Nav, Navbar, Image } from "react-bootstrap";
-import Search from "./views/Search";
-import { Auth0ContextInterface, withAuth0 } from "@auth0/auth0-react";
-import ProtectedRoute from "./components/ProtectedRoute";
-import LoginButton from "./components/LoginButton";
-import LogoutButton from "./components/LogoutButton";
+import React from 'react';
+import { Link, Route } from 'react-router-dom';
+import Index from './views/Index';
+import { Nav, Navbar, Image } from 'react-bootstrap';
+import Search from './views/Search';
+import { Auth0ContextInterface, withAuth0 } from '@auth0/auth0-react';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginButton from './components/LoginButton';
+import LogoutButton from './components/LogoutButton';
 
 type Props = {
   auth0: Auth0ContextInterface;
@@ -33,10 +33,12 @@ class App extends React.Component<Props, {}> {
                       src={this.props.auth0.user.picture}
                       thumbnail
                       className="img-fluid"
-                      style={{ maxHeight: "5vh" }}
+                      style={{ maxHeight: '5vh' }}
                     />
                   </Nav.Item>
-                  <Nav.Item className="pt-2 mx-2">{this.props.auth0.user.nickname}</Nav.Item>
+                  <Nav.Item className="pt-2 mx-2">
+                    {this.props.auth0.user.nickname}
+                  </Nav.Item>
                   <Nav.Item>
                     <LogoutButton />
                   </Nav.Item>
