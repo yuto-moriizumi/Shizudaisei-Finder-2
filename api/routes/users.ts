@@ -277,10 +277,10 @@ router.post("/follow", checkJwt, async (req, res) => {
       return res.status(500).send(error); //その他のエラー
     }
     console.log(`${auth_user.user_id} followed ${req.body.user_id}`);
-    res.status(201).send();
     //DBに使用状況を登録
     const connection = await mysql2.createConnection(DB_SETTING);
     await connection.connect();
+    res.status(201).send(); //lambda用に,res以後にawait含む文が内容にしておく
     connection
       .execute("INSERT IGNORE friendships VALUE (?, ?, ?)", [
         auth_user.user_id,
