@@ -6,6 +6,7 @@ import User from "../utils/User";
 import UserCard from "../components/UserCard";
 import axios from "axios";
 import dayjs from "dayjs";
+import getResponsiveElements from "../utils/getResponsiveElements";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 const DEFAULT_RANGE_MONTHS = 6;
@@ -105,28 +106,6 @@ class Search extends React.Component<Prop, State> {
         return user2;
       }),
     });
-  }
-
-  private getCardsWithSeparator(users: User[]) {
-    //カードをレスポンシブ対応させるために、キー付セパレータを混ぜたJSXの配列を生成する
-    const result = new Array<JSX.Element>();
-    let key = 0;
-    for (let i = 0; i < users.length; i++) {
-      if (i % 2 === 0) result.push(<div className="w-100 d-none d-sm-block d-md-none" key={key++}></div>);
-      if (i % 3 === 0) result.push(<div className="w-100 d-none d-md-block d-lg-none" key={key++}></div>);
-      if (i % 4 === 0) result.push(<div className="w-100 d-none d-lg-block d-xl-none" key={key++}></div>);
-      if (i % 5 === 0) result.push(<div className="w-100 d-none d-xl-block" key={key++}></div>);
-      result.push(
-        <UserCard
-          key={key++}
-          user={users[i]}
-          onFollow={() => {
-            this.follow(users[i]);
-          }}
-        />
-      );
-    }
-    return result;
   }
 
   private async followAll() {
@@ -283,7 +262,13 @@ class Search extends React.Component<Prop, State> {
           </Alert>
         </Container>
         <Container fluid className="px-4 no-gutters">
-          <CardDeck>{this.getCardsWithSeparator(this.state.users)}</CardDeck>
+          <CardDeck>
+            {getResponsiveElements(
+              this.state.users.map((user) => (
+                <UserCard key={user.id} user={user} onFollow={() => this.follow(user)} />
+              ))
+            )}
+          </CardDeck>
         </Container>
       </>
     );
