@@ -21,9 +21,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      RDS_HOSTNAME: "db"
-      RDS_USERNAME: "root"
-      RDS_PASSWORD: "docker"
+      RDS_HOSTNAME: $RDS_HOSTNAME
+      RDS_USERNAME: $RDS_USERNAME
+      RDS_PASSWORD: $RDS_PASSWORD
       RDS_DB_NAME: "shizudaisei-finder"
       CLIENT_ORIGIN_URL: "http://localhost"
       CONSUMER_KEY: $CONSUMER_KEY
