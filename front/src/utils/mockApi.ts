@@ -1,9 +1,9 @@
 import axios from 'axios';
 import AxiosMockAdapter from 'axios-mock-adapter';
-import User from './User';
+import User from './User.d';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
-if (!SERVER_URL) new Error('SERVER_URL must be specified');
+if (!SERVER_URL) console.error('SERVER_URL must be specified');
 
 export default function enableMock() {
   const mockAxios = new AxiosMockAdapter(axios, { delayResponse: 500 });
@@ -30,18 +30,15 @@ export default function enableMock() {
     },
   ];
 
-  mockAxios.onGet(`${SERVER_URL}/users`).reply(() => {
-    return [
-      200,
-      USERS.map((user) => {
-        delete user.is_following;
-        return user;
-      }),
-    ];
-  });
-  mockAxios.onGet(`${SERVER_URL}/users/search`).reply(() => {
-    return [200, USERS];
-  });
+  mockAxios.onGet(`${SERVER_URL}/users`).reply(() => [
+    200,
+    USERS.map((user) => {
+      const user2 = user;
+      delete user2.is_following;
+      return user2;
+    }),
+  ]);
+  mockAxios.onGet(`${SERVER_URL}/users/search`).reply(() => [200, USERS]);
   mockAxios.onPost(`${SERVER_URL}/users/follow`).reply(() => [201, null]);
   mockAxios.onGet(`${SERVER_URL}/users/update`).reply(() => [200, null]);
 }

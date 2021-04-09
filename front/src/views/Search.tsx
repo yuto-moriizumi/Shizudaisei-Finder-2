@@ -8,17 +8,27 @@ import {
   Form,
   Row,
   Spinner,
+  Col,
 } from 'react-bootstrap';
-import { Col } from 'react-bootstrap';
-import User from '../utils/User';
-import UserCard from '../components/UserCard';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import User from '../utils/User.d';
+import UserCard from '../components/UserCard/UserCard';
 import getResponsiveElements from '../utils/getResponsiveElements';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 const DEFAULT_RANGE_MONTHS = 6;
 const FOLLOWALL_INTERVAL_MS = 500;
+const EXCL_KWS = [
+  '学環',
+  '人文',
+  '教育',
+  '理学部',
+  '農学部',
+  '情報学部',
+  '工学部',
+];
+const EXCL_NAMES = ['サークル'];
 
 type Prop = {
   auth0: Auth0ContextInterface;
@@ -37,41 +47,40 @@ type State = {
   reached_follow_limit: boolean;
 };
 class Search extends React.Component<Prop, State> {
-  private excl_kws = [
-    '学環',
-    '人文',
-    '教育',
-    '理学部',
-    '農学部',
-    '情報学部',
-    '工学部',
-  ];
-  private excl_names = ['サークル'];
-  state = {
-    users: new Array<User>(),
-    from: dayjs().subtract(DEFAULT_RANGE_MONTHS, 'month').format('YYYY-MM-DD'), //デフォルトは半年前まで
-    to: dayjs().format('YYYY-MM-DD'),
-    incl_flw: false,
-    excl_kws: new Array<string>(),
-    excl_names: new Array<string>(),
-    is_searching: false,
-    search_failed: false,
-    is_search_empty: false,
-    show_warning: true,
-    reached_follow_limit: false,
-  };
+  private searchBinded = this.search.bind(this);
+
+  private followAllBinded = this.followAll.bind(this);
+
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      users: [],
+      from: dayjs().subtract(DEFAULT_RANGE_MONTHS, 'month').format('YYYY-MM-DD'), // デフォルトは半年前まで
+      to: dayjs().format('YYYY-MM-DD'),
+      incl_flw: false,
+      excl_kws: [],
+      excl_names: [],
+      is_searching: false,
+      search_failed: false,
+      is_search_empty: false,
+      show_warning: true,
+      reached_follow_limit: false,
+    };    
+  }
 
   private async search() {
+    const { auth0 } = this.props;
     this.setState({ is_searching: true });
-    const token = await this.props.auth0.getAccessTokenSilently();
+    const token = await auth0.getAccessTokenSilently();
+    const { from, to, incl_flw, excl_kws, excl_names } = this.state;
     axios
       .get(`${SERVER_URL}/users/search`, {
         params: {
-          from: this.state.from,
-          to: this.state.to,
-          incl_flw: this.state.incl_flw,
-          excl_kws: this.state.excl_kws,
-          excl_names: this.state.excl_names,
+          from,
+          to,
+          incl_flw,
+          excl_kws,
+          excl_names,
         },
         headers: {
           authorization: `Bearer ${token}`,
@@ -90,16 +99,19 @@ class Search extends React.Component<Prop, State> {
       .finally(() => this.setState({ is_searching: false }));
   }
 
-  //ユーザをフォローする
+  // ユーザをフォローする
   private async follow(user: User) {
-    if (user.is_requesting || user.is_following) return; //すでに対象ユーザにフォローリクエストを送信しているか、フォロー済み場合は何もしない
+    if (user.is_requesting || user.is_following) return; // すでに対象ユーザにフォローリクエストを送信しているか、フォロー済み場合は何もしない
+    const { users } = this.state;
     this.setState({
-      users: this.state.users.map((user2) => {
-        if (user2 === user) user2.is_requesting = true;
-        return user2;
+      users: users.map((user2) => {
+        const user3 = user2;
+        if (user2 === user) user3.is_requesting = true;
+        return user3;
       }),
     });
-    const token = await this.props.auth0.getAccessTokenSilently();
+    const { auth0 } = this.props;
+    const token = await auth0.getAccessTokenSilently();
     try {
       await axios.post(
         `${SERVER_URL}/users/follow`,
@@ -107,39 +119,48 @@ class Search extends React.Component<Prop, State> {
         { headers: { authorization: `Bearer ${token}` }, timeout: 4000 }
       );
       this.setState({
-        users: this.state.users.map((user2) => {
-          if (user2 === user) user2.is_following = true;
-          return user2;
+        users: users.map((user2) => {
+          const user3 = user2;
+          if (user2 === user) user3.is_following = true;
+          return user3;
         }),
       });
     } catch (error) {
       if (error.response.status === 429)
         this.setState({ reached_follow_limit: true });
       this.setState({
-        users: this.state.users.map((user2) => {
-          if (user2 === user) user2.follow_failed = true;
-          return user2;
+        users: users.map((user2) => {
+          const user3 = user2;
+          if (user2 === user) user3.follow_failed = true;
+          return user3;
         }),
       });
     }
     this.setState({
-      users: this.state.users.map((user2) => {
-        if (user2 === user) user2.is_requesting = false;
+      users: users.map((user2) => {
+        const user3 = user2;
+        if (user2 === user) user3.is_requesting = false;
         return user2;
       }),
     });
   }
 
   private async followAll() {
-    for (const user of this.state.users) {
+    const { users } = this.state;
+    // eslint-disable-next-line no-restricted-syntax
+    for (const user of users) {
       this.follow(user);
+      // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve) =>
         setTimeout(resolve, FOLLOWALL_INTERVAL_MS)
       );
     }
   }
 
+
+
   render() {
+    const { from, to, incl_flw, excl_kws, excl_names, is_searching,show_warning,search_failed,is_search_empty,reached_follow_limit,users } = this.state;
     return (
       <>
         <Container className="my-3">
@@ -149,7 +170,7 @@ class Search extends React.Component<Prop, State> {
               <Col>
                 <Form.Control
                   type="date"
-                  value={this.state.from}
+                  value={from}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     this.setState({ from: e.target.value })
                   }
@@ -159,7 +180,7 @@ class Search extends React.Component<Prop, State> {
               <Col>
                 <Form.Control
                   type="date"
-                  value={this.state.to}
+                  value={to}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     this.setState({ to: e.target.value })
                   }
@@ -171,79 +192,78 @@ class Search extends React.Component<Prop, State> {
                 inline
                 type="checkbox"
                 label="フォローしている人を含む"
-                onChange={(_: React.ChangeEvent<HTMLInputElement>) =>
-                  this.setState({ incl_flw: !this.state.incl_flw })
+                // _: React.ChangeEvent<HTMLInputElement>
+                onChange={() =>
+                  this.setState({ incl_flw: !incl_flw })
                 }
               />
             </Form.Row>
             <Form.Row className="d-flex justify-content-between">
               <Form.Label>学部</Form.Label>
-              {this.excl_kws.map((kw) => {
-                return (
+              {EXCL_KWS.map((kw) => (
                   <Form.Check
                     key={kw}
-                    id={'excl_kws' + kw}
+                    id={`excl_kws${  kw}`}
                     inline
                     type="checkbox"
                     label={kw}
-                    checked={!this.state.excl_kws.includes(kw)}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      if (this.state.excl_kws.includes(kw))
+                  checked={!excl_kws.includes(kw)}
+                  // e: React.ChangeEvent<HTMLInputElement>
+                    onChange={() => {
+                      if (excl_kws.includes(kw))
                         this.setState({
-                          excl_kws: this.state.excl_kws.filter(
+                          excl_kws: excl_kws.filter(
                             (kwd) => kwd !== kw
                           ),
                         });
                       else {
-                        const excl_kws = this.state.excl_kws.slice();
-                        excl_kws.push(kw);
+                        const new_excl_kws = excl_kws.slice();
+                        new_excl_kws.push(kw);
                         this.setState({
-                          excl_kws: excl_kws,
+                          excl_kws:new_excl_kws,
                         });
                       }
                     }}
                   />
-                );
-              })}
+                ))}
             </Form.Row>
             <Form.Text>
               チェックを外すとその学部と思われるユーザを除外します（正確ではありません）
             </Form.Text>
             <Form.Row>
               <Form.Label className="mr-5">名前</Form.Label>
-              {this.excl_names.map((kw) => {
-                return (
+              {EXCL_NAMES.map((kw) => (
                   <Form.Check
                     key={kw}
-                    id={'excl_name' + kw}
+                    id={`excl_name${  kw}`}
                     inline
                     type="checkbox"
                     label={kw}
-                    checked={!this.state.excl_names.includes(kw)}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      if (this.state.excl_names.includes(kw))
+                  checked={!excl_names.includes(kw)}
+                  // e: React.ChangeEvent<HTMLInputElement>
+                    onChange={() => {
+                      if (excl_names.includes(kw))
                         this.setState({
-                          excl_names: this.state.excl_names.filter(
+                          excl_names: excl_names.filter(
                             (kwd) => kwd !== kw
                           ),
                         });
                       else {
-                        const excl_names = this.state.excl_names.slice();
-                        excl_names.push(kw);
+                        const new_excl_names = excl_names.slice();
+                        new_excl_names.push(kw);
                         this.setState({
-                          excl_names: excl_names,
+                          excl_names:new_excl_names,
                         });
                       }
                     }}
                   />
-                );
-              })}
+                ))}
             </Form.Row>
             <Form.Text>
               チェックを外すとその名前が含まれるユーザを除外します
             </Form.Text>
             <Container className="mt-3 text-center">
-              {this.state.is_searching ? (
+              {is_searching ? (
                 <Button className="col-8" disabled>
                   <Spinner
                     as="span"
@@ -253,7 +273,7 @@ class Search extends React.Component<Prop, State> {
                   />
                 </Button>
               ) : (
-                <Button className="col-8" onClick={this.search.bind(this)}>
+                <Button className="col-8" onClick={this.searchBinded}>
                   検索
                 </Button>
               )}
@@ -261,7 +281,7 @@ class Search extends React.Component<Prop, State> {
           </Form>
           <Row className="mb-2">
             <h1 className="mr-auto">検索結果</h1>
-            <Button size="lg" onClick={this.followAll.bind(this)}>
+            <Button size="lg" onClick={this.followAllBinded}>
               一括フォロー
             </Button>
           </Row>
@@ -269,7 +289,7 @@ class Search extends React.Component<Prop, State> {
             variant="warning"
             dismissible
             onClose={() => this.setState({ show_warning: false })}
-            show={this.state.show_warning}
+            show={show_warning}
           >
             短時間に大量フォローすると、アカウントがロックされる場合があります。
             <br />
@@ -279,7 +299,7 @@ class Search extends React.Component<Prop, State> {
             variant="danger"
             dismissible
             onClose={() => this.setState({ search_failed: false })}
-            show={this.state.search_failed}
+            show={search_failed}
           >
             サーバエラー。少し時間を空ければ治るかもしれません。
           </Alert>
@@ -287,7 +307,7 @@ class Search extends React.Component<Prop, State> {
             variant="warning"
             dismissible
             onClose={() => this.setState({ reached_follow_limit: false })}
-            show={this.state.reached_follow_limit}
+            show={reached_follow_limit}
           >
             フォロー制限に達しました。時間を開けてから再度フォローを行ってください。
           </Alert>
@@ -295,7 +315,7 @@ class Search extends React.Component<Prop, State> {
             variant="info"
             dismissible
             onClose={() => this.setState({ is_search_empty: false })}
-            show={this.state.is_search_empty}
+            show={is_search_empty}
           >
             検索結果は0件でした
           </Alert>
@@ -303,7 +323,7 @@ class Search extends React.Component<Prop, State> {
         <Container fluid className="px-4 no-gutters">
           <CardDeck>
             {getResponsiveElements(
-              this.state.users.map((user) => (
+              users.map((user) => (
                 <UserCard
                   key={user.id}
                   user={user}

@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import App from './App';
-import { BrowserRouter as Router } from 'react-router-dom';
 import Auth0ProviderWithHistory from './components/Auth0ProviderWithHistory';
-import enableMock from './utils/mockApi';
+// import enableMock from './utils/mockApi';
 
 // enableMock();
 ReactDOM.render(

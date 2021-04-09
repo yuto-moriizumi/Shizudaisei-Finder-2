@@ -7,13 +7,13 @@ type Props = {
 };
 class LogoutButton extends React.Component<Props, {}> {
   render() {
-    const { logout } = this.props.auth0;
+    const { auth0 } = this.props;
     return (
       <Button
         block
         variant="danger"
         onClick={() =>
-          logout({
+          auth0.logout({
             returnTo: window.location.origin,
           })
         }
