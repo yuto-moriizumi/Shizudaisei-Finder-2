@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Link, Route } from 'react-router-dom';
 import { Nav, Navbar, Image } from 'react-bootstrap';
 import { Auth0ContextInterface, withAuth0 } from '@auth0/auth0-react';
-import Index from './views/Index';
-import Search from './views/Search';
 import ProtectedRoute from './components/ProtectedRoute';
-import LoginButton from './components/LoginButton';
-import LogoutButton from './components/LogoutButton';
+
+const Index = lazy(() => import('./views/Index'));
+const Search = lazy(() => import('./views/Search'));
+const LoginButton = lazy(() => import('./components/LoginButton'));
+const LogoutButton = lazy(() => import('./components/LogoutButton'));
 
 type Props = {
   auth0: Auth0ContextInterface;
@@ -18,7 +19,7 @@ class App extends React.Component<Props, {}> {
     const { isLoading, isAuthenticated, user } = auth0;
     if (isLoading) return <h1>LOADING</h1>;
     return (
-      <>
+      <Suspense fallback={<h1>LOADING</h1>}>
         <Navbar bg="light" expand="sm">
           <Navbar.Brand>
             <Link to="/">
@@ -54,7 +55,7 @@ class App extends React.Component<Props, {}> {
         </Navbar>
         <Route exact path="/" component={Index} />
         <ProtectedRoute path="/search" component={Search} />
-      </>
+      </Suspense>
     );
   }
 }

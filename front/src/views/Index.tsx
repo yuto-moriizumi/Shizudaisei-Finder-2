@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Button, CardDeck, Container, Jumbotron } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import User from '../utils/User.d';
-import UserCard from '../components/UserCard/UserCard';
 import getResponsiveElements from '../utils/getResponsiveElements';
 import ResTypo from '../components/ResTypo';
 
+const UserCard = lazy(() => import('../components/UserCard/UserCard'));
 interface State {
   users: User[];
   isLoading: boolean;
@@ -100,9 +100,11 @@ export default class Index extends React.Component<{}, State> {
         </Jumbotron>
         <Container fluid className="px-4 no-gutters">
           <CardDeck>
-            {getResponsiveElements(
-              users.map((user) => <UserCard key={user.id} user={user} />)
-            )}
+            <Suspense fallback={<h1>LOADING</h1>}>
+              {getResponsiveElements(
+                users.map((user) => <UserCard key={user.id} user={user} />)
+              )}
+            </Suspense>
           </CardDeck>
         </Container>
       </>

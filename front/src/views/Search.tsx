@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Auth0ContextInterface, withAuth0 } from '@auth0/auth0-react';
 import {
   Alert,
@@ -13,8 +13,9 @@ import {
 import axios from 'axios';
 import dayjs from 'dayjs';
 import User from '../utils/User.d';
-import UserCard from '../components/UserCard/UserCard';
 import getResponsiveElements from '../utils/getResponsiveElements';
+
+const UserCard = lazy(() => import('../components/UserCard/UserCard'));
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 const DEFAULT_RANGE_MONTHS = 6;
@@ -338,15 +339,17 @@ class Search extends React.Component<Prop, State> {
         </Container>
         <Container fluid className="px-4 no-gutters">
           <CardDeck>
-            {getResponsiveElements(
-              users.map((user) => (
-                <UserCard
-                  key={user.id}
-                  user={user}
-                  onFollow={() => this.follow(user)}
-                />
-              ))
-            )}
+            <Suspense fallback={<h1>LOADING</h1>}>
+              {getResponsiveElements(
+                users.map((user) => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    onFollow={() => this.follow(user)}
+                  />
+                ))
+              )}
+            </Suspense>
           </CardDeck>
         </Container>
       </>
