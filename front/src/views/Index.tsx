@@ -5,6 +5,7 @@ import axios from 'axios';
 import User from '../utils/User.d';
 import UserCard from '../components/UserCard/UserCard';
 import getResponsiveElements from '../utils/getResponsiveElements';
+import ResTypo from '../utils/ResTypo';
 
 interface State {
   users: User[];
@@ -76,27 +77,15 @@ export default class Index extends React.Component<{}, State> {
     return (
       <>
         <Jumbotron className="text-center">
-          <h1 className="display-1 d-none d-xl-block">仲間を、 見つけよう！</h1>
-          <h1 className="display-2 d-none d-lg-block d-xl-none">
+          <ResTypo
+            classes={['h2', 'h1', 'display-4', 'display-2', 'display-1']}
+          >
             仲間を、 見つけよう！
-          </h1>
-          <h1 className="display-4 d-none d-md-block d-lg-none">
-            仲間を、 見つけよう！
-          </h1>
-          <h1 className="d-none d-sm-block d-md-none">仲間を、 見つけよう！</h1>
-          <h2 className="d-xs-block d-sm-none">仲間を、 見つけよう！</h2>
-          <p className="h3 mb-3 d-none d-md-block">
+          </ResTypo>
+          <ResTypo asP classes={['h6', 'h5', 'h4', 'h3', 'h2']}>
             Shizudaisei Finder
             2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
-          </p>
-          <p className="h4 mb-3 d-none d-sm-block d-md-none">
-            Shizudaisei Finder
-            2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
-          </p>
-          <p className="h5 mb-3 d-sm-none">
-            Shizudaisei Finder
-            2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
-          </p>
+          </ResTypo>
           <Link to="search">
             <Button size="lg">検索する</Button>
           </Link>
