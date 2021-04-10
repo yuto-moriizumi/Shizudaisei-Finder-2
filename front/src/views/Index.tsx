@@ -5,7 +5,7 @@ import axios from 'axios';
 import User from '../utils/User.d';
 import UserCard from '../components/UserCard/UserCard';
 import getResponsiveElements from '../utils/getResponsiveElements';
-import ResTypo from '../utils/ResTypo';
+import ResTypo from '../components/ResTypo';
 
 interface State {
   users: User[];
