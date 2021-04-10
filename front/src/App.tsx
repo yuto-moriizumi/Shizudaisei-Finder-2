@@ -14,21 +14,22 @@ type Props = {
 
 class App extends React.Component<Props, {}> {
   render() {
-    const {auth0} = this.props;
-    const { isLoading,isAuthenticated,user } = auth0;
+    const { auth0 } = this.props;
+    const { isLoading, isAuthenticated, user } = auth0;
     if (isLoading) return <h1>LOADING</h1>;
     return (
       <>
         <Navbar bg="light" expand="sm">
           <Navbar.Brand>
-            <Link to="/" className="h2">
-              Shizudaisei Finder 2
+            <Link to="/">
+              <span className="d-none h2 d-md-block">Shizudaisei Finder 2</span>
+              <span className="d-md-none h3">Shizudaisei Finder 2</span>
             </Link>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="ml-auto">
-              {isAuthenticated? (
+              {isAuthenticated ? (
                 <>
                   <Nav.Item>
                     <Image
@@ -38,9 +39,7 @@ class App extends React.Component<Props, {}> {
                       style={{ maxHeight: '5vh' }}
                     />
                   </Nav.Item>
-                  <Nav.Item className="pt-2 mx-2">
-                    {user.nickname}
-                  </Nav.Item>
+                  <Nav.Item className="pt-2 mx-2">{user.nickname}</Nav.Item>
                   <Nav.Item>
                     <LogoutButton />
                   </Nav.Item>
