@@ -55,7 +55,9 @@ class Search extends React.Component<Prop, State> {
     super(props);
     this.state = {
       users: [],
-      from: dayjs().subtract(DEFAULT_RANGE_MONTHS, 'month').format('YYYY-MM-DD'), // デフォルトは半年前まで
+      from: dayjs()
+        .subtract(DEFAULT_RANGE_MONTHS, 'month')
+        .format('YYYY-MM-DD'), // デフォルトは半年前まで
       to: dayjs().format('YYYY-MM-DD'),
       incl_flw: false,
       excl_kws: [],
@@ -65,7 +67,7 @@ class Search extends React.Component<Prop, State> {
       is_search_empty: false,
       show_warning: true,
       reached_follow_limit: false,
-    };    
+    };
   }
 
   private async search() {
@@ -157,17 +159,27 @@ class Search extends React.Component<Prop, State> {
     }
   }
 
-
-
   render() {
-    const { from, to, incl_flw, excl_kws, excl_names, is_searching,show_warning,search_failed,is_search_empty,reached_follow_limit,users } = this.state;
+    const {
+      from,
+      to,
+      incl_flw,
+      excl_kws,
+      excl_names,
+      is_searching,
+      show_warning,
+      search_failed,
+      is_search_empty,
+      reached_follow_limit,
+      users,
+    } = this.state;
     return (
       <>
-        <Container className="my-3">
+        <Container className="my-3" fluid="md">
           <h1>検索条件</h1>
           <Form className="my-3">
             <Form.Row className="mb-2">
-              <Col>
+              <Col xs={10} sm="auto">
                 <Form.Control
                   type="date"
                   value={from}
@@ -176,8 +188,10 @@ class Search extends React.Component<Prop, State> {
                   }
                 />
               </Col>
-              <Form.Label className="mx-3">から</Form.Label>
-              <Col>
+              <Form.Label className="my-auto col-2 col-sm-auto">
+                から
+              </Form.Label>
+              <Col xs={10} sm="auto">
                 <Form.Control
                   type="date"
                   value={to}
@@ -186,78 +200,80 @@ class Search extends React.Component<Prop, State> {
                   }
                 />
               </Col>
-              <Form.Label className="ml-3 mr-4">まで</Form.Label>
-              <Form.Check
-                id="incl_flw"
-                inline
-                type="checkbox"
-                label="フォローしている人を含む"
-                // _: React.ChangeEvent<HTMLInputElement>
-                onChange={() =>
-                  this.setState({ incl_flw: !incl_flw })
-                }
-              />
+              <Form.Label className="my-auto col-2 col-sm-auto">
+                まで
+              </Form.Label>
+              <Col className="my-auto" xs={12} sm="auto">
+                <Form.Check
+                  id="incl_flw"
+                  inline
+                  type="checkbox"
+                  label="フォローしている人を含む"
+                  // _: React.ChangeEvent<HTMLInputElement>
+                  onChange={() => this.setState({ incl_flw: !incl_flw })}
+                />
+              </Col>
             </Form.Row>
             <Form.Row className="d-flex justify-content-between">
-              <Form.Label>学部</Form.Label>
-              {EXCL_KWS.map((kw) => (
-                  <Form.Check
-                    key={kw}
-                    id={`excl_kws${  kw}`}
-                    inline
-                    type="checkbox"
-                    label={kw}
-                  checked={!excl_kws.includes(kw)}
-                  // e: React.ChangeEvent<HTMLInputElement>
-                    onChange={() => {
-                      if (excl_kws.includes(kw))
-                        this.setState({
-                          excl_kws: excl_kws.filter(
-                            (kwd) => kwd !== kw
-                          ),
-                        });
-                      else {
-                        const new_excl_kws = excl_kws.slice();
-                        new_excl_kws.push(kw);
-                        this.setState({
-                          excl_kws:new_excl_kws,
-                        });
-                      }
-                    }}
-                  />
+              <Form.Label className="my-auto col-2 col-sm-1">学部</Form.Label>
+              <Form.Row className="col-10 col-sm-11">
+                {EXCL_KWS.map((kw) => (
+                  <Col xs="auto">
+                    <Form.Check
+                      key={kw}
+                      id={`excl_kws${kw}`}
+                      inline
+                      type="checkbox"
+                      label={kw}
+                      checked={!excl_kws.includes(kw)}
+                      // e: React.ChangeEvent<HTMLInputElement>
+                      onChange={() => {
+                        if (excl_kws.includes(kw))
+                          this.setState({
+                            excl_kws: excl_kws.filter((kwd) => kwd !== kw),
+                          });
+                        else {
+                          const new_excl_kws = excl_kws.slice();
+                          new_excl_kws.push(kw);
+                          this.setState({
+                            excl_kws: new_excl_kws,
+                          });
+                        }
+                      }}
+                    />
+                  </Col>
                 ))}
+              </Form.Row>
             </Form.Row>
             <Form.Text>
               チェックを外すとその学部と思われるユーザを除外します（正確ではありません）
             </Form.Text>
             <Form.Row>
-              <Form.Label className="mr-5">名前</Form.Label>
+              <Form.Label className="mr-5 my-auto">名前</Form.Label>
               {EXCL_NAMES.map((kw) => (
-                  <Form.Check
-                    key={kw}
-                    id={`excl_name${  kw}`}
-                    inline
-                    type="checkbox"
-                    label={kw}
+                <Form.Check
+                  key={kw}
+                  id={`excl_name${kw}`}
+                  inline
+                  type="checkbox"
+                  label={kw}
                   checked={!excl_names.includes(kw)}
                   // e: React.ChangeEvent<HTMLInputElement>
-                    onChange={() => {
-                      if (excl_names.includes(kw))
-                        this.setState({
-                          excl_names: excl_names.filter(
-                            (kwd) => kwd !== kw
-                          ),
-                        });
-                      else {
-                        const new_excl_names = excl_names.slice();
-                        new_excl_names.push(kw);
-                        this.setState({
-                          excl_names:new_excl_names,
-                        });
-                      }
-                    }}
-                  />
-                ))}
+                  onChange={() => {
+                    if (excl_names.includes(kw))
+                      this.setState({
+                        excl_names: excl_names.filter((kwd) => kwd !== kw),
+                      });
+                    else {
+                      const new_excl_names = excl_names.slice();
+                      new_excl_names.push(kw);
+                      this.setState({
+                        excl_names: new_excl_names,
+                      });
+                    }
+                  }}
+                />
+              ))}
             </Form.Row>
             <Form.Text>
               チェックを外すとその名前が含まれるユーザを除外します
@@ -279,7 +295,7 @@ class Search extends React.Component<Prop, State> {
               )}
             </Container>
           </Form>
-          <Row className="mb-2">
+          <Row className="mb-2 mx-1">
             <h1 className="mr-auto">検索結果</h1>
             <Button size="lg" onClick={this.followAllBinded}>
               一括フォロー
