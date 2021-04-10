@@ -12,13 +12,14 @@ type Heading =
   | 'h5'
   | 'h6';
 type Props = {
-  asP?: boolean;
   classes: [Heading, Heading, Heading, Heading, Heading];
+  as?: 'p' | 'h1' | 'span';
+  children?: JSX.Element | string;
 };
 export default class ResTypo extends React.Component<Props> {
   render() {
-    const { asP, classes, children } = this.props;
-    if (asP) {
+    const { as, classes, children } = this.props;
+    if (as === undefined || as === 'p') {
       return (
         <>
           <p className={`${classes[4]} d-none d-xl-block`}>{children}</p>
@@ -35,19 +36,35 @@ export default class ResTypo extends React.Component<Props> {
         </>
       );
     }
+    if (as === 'h1')
+      return (
+        <>
+          <h1 className={`${classes[4]} d-none d-xl-block`}>{children}</h1>
+          <h1 className={`${classes[3]} d-none d-lg-block d-xl-none`}>
+            {children}
+          </h1>
+          <h1 className={`${classes[2]} d-none d-md-block d-lg-none`}>
+            {children}
+          </h1>
+          <h1 className={`${classes[1]} d-none d-sm-block d-md-none`}>
+            {children}
+          </h1>
+          <h1 className={`${classes[0]} d-xs-block d-sm-none`}>{children}</h1>
+        </>
+      );
     return (
       <>
-        <h1 className={`${classes[4]} d-none d-xl-block`}>{children}</h1>
-        <h1 className={`${classes[3]} d-none d-lg-block d-xl-none`}>
+        <span className={`${classes[4]} d-none d-xl-block`}>{children}</span>
+        <span className={`${classes[3]} d-none d-lg-block d-xl-none`}>
           {children}
-        </h1>
-        <h1 className={`${classes[2]} d-none d-md-block d-lg-none`}>
+        </span>
+        <span className={`${classes[2]} d-none d-md-block d-lg-none`}>
           {children}
-        </h1>
-        <h1 className={`${classes[1]} d-none d-sm-block d-md-none`}>
+        </span>
+        <span className={`${classes[1]} d-none d-sm-block d-md-none`}>
           {children}
-        </h1>
-        <h1 className={`${classes[0]} d-xs-block d-sm-none`}>{children}</h1>
+        </span>
+        <span className={`${classes[0]} d-xs-block d-sm-none`}>{children}</span>
       </>
     );
   }

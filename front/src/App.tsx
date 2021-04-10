@@ -8,6 +8,7 @@ const Index = lazy(() => import('./views/Index'));
 const Search = lazy(() => import('./views/Search'));
 const LoginButton = lazy(() => import('./components/LoginButton'));
 const LogoutButton = lazy(() => import('./components/LogoutButton'));
+const ResTypo = lazy(() => import('./components/ResTypo'));
 
 type Props = {
   auth0: Auth0ContextInterface;
@@ -23,8 +24,9 @@ class App extends React.Component<Props, {}> {
         <Navbar bg="light" expand="sm">
           <Navbar.Brand>
             <Link to="/">
-              <span className="d-none h2 d-md-block">Shizudaisei Finder 2</span>
-              <span className="d-md-none h3">Shizudaisei Finder 2</span>
+              <ResTypo as="span" classes={['h3', 'h2', 'h2', 'h2', 'h2']}>
+                Shizudaisei Finder 2
+              </ResTypo>
             </Link>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />

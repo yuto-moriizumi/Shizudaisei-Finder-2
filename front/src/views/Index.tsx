@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import User from '../utils/User.d';
 import getResponsiveElements from '../utils/getResponsiveElements';
-import ResTypo from '../components/ResTypo';
 
+const ResTypo = lazy(() => import('../components/ResTypo'));
 const UserCard = lazy(() => import('../components/UserCard/UserCard'));
 interface State {
   users: User[];
@@ -78,11 +78,11 @@ export default class Index extends React.Component<{}, State> {
       <>
         <Jumbotron className="text-center">
           <ResTypo
-            classes={['h2', 'h1', 'display-4', 'display-2', 'display-1']}
+            classes={['h3', 'h1', 'display-4', 'display-2', 'display-1']}
           >
             仲間を、 見つけよう！
           </ResTypo>
-          <ResTypo asP classes={['h6', 'h5', 'h4', 'h3', 'h2']}>
+          <ResTypo as="p" classes={['h6', 'h5', 'h4', 'h3', 'h2']}>
             Shizudaisei Finder
             2は、静大生のTwitterユーザを簡単に見つけられるWEBアプリです
           </ResTypo>
