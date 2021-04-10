@@ -7,6 +7,7 @@ import Express from 'express';
 import logger from 'morgan';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 
 import usersRouter from './routes/users';
 
@@ -18,6 +19,7 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN_URL }));
 app.use(Express.json());
 app.use(Express.urlencoded({ extended: true }));
+app.use(compression()); //gzip圧縮して返す
 
 //apiルータへ
 app.use('/users', usersRouter);
