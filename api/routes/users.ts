@@ -17,6 +17,7 @@ const router = express.Router();
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN ?? 'AUTH0_DOMAIN';
 const AUTH0_FQDN = `https://${AUTH0_DOMAIN}/`;
 const CACHE_TIMEOUT_HOUR = 24; // 名前や表示IDのキャッシュ時間
+const GET_USERS_CHUNK = 30; // /にアクセスしてきたときに、いくつのユーザ情報を返すか
 
 const DB_SETTING = {
   host: process.env.RDS_HOSTNAME,
@@ -51,10 +52,7 @@ async function fetchUsers(users: User[]) {
   const client = new Twitter(TWITTER_KEYSET);
   const detailed_users = await client
     .get('users/lookup', {
-      user_id: users
-        .slice(0, 100)
-        .map((user) => user.id)
-        .join(','),
+      user_id: users.map((user) => user.id).join(','),
       include_entities: false,
     })
     .catch((e) => {
@@ -144,7 +142,7 @@ router.get('/', async (req, res) => {
   try {
     await connection.connect();
     const [usersArr] = await connection.query(
-      `SELECT * FROM users ORDER BY created_at DESC LIMIT 100 OFFSET ${offset}`
+      `SELECT * FROM users ORDER BY created_at DESC LIMIT ${GET_USERS_CHUNK} OFFSET ${offset}`
     );
     const users = usersArr as User[];
     const detailed_users = await getUsers(users);
