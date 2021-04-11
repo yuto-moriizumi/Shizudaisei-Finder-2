@@ -300,7 +300,7 @@ router.get('/search', checkJwt, async (req, res) => {
       users = users.filter((user) => following_ids.indexOf(user.id) === -1);
 
     let detailed_users = await getUsers(users);
-    if (detailed_users instanceof TypeError) {
+    if (detailed_users instanceof Error) {
       res.status(500).send();
       return;
     }
