@@ -37,15 +37,10 @@ class App extends React.Component<Props, {}> {
               <Nav className="ml-auto my-auto">
                 <Nav.Item className="mr-1">
                   <a
-                    href="https://twitter.com/share?ref_src=twsrc%5Etfw"
-                    className="twitter-share-button btn btn-success"
-                    data-size="large"
-                    data-text="静大生発見機2で静大生をフォローしよう！"
-                    data-url="https://shizudaisei-finder-2.yuto-moriizumi.net/"
-                    data-hashtags="春から静大"
-                    data-related="kurvarian,su_sabage"
-                    data-lang="ja"
-                    data-show-count="false"
+                    className="twitter-share-button btn btn-info"
+                    href="https://twitter.com/share?text=静大生発見機2で静大生をフォローしよう！&url=https://shizudaisei-finder-2.yuto-moriizumi.net/&hashtags=春から静大&related=kurvarian,su_sabage&lang=ja&show-count=false"
+                    target="_blank"
+                    rel="noreferrer"
                   >
                     共有する
                   </a>
@@ -80,11 +75,6 @@ class App extends React.Component<Props, {}> {
             <Route component={NotFound} />
           </Switch>
         </Suspense>
-        <script
-          async
-          src="https://platform.twitter.com/widgets.js"
-          charSet="utf-8"
-        />
       </>
     );
   }
