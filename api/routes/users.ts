@@ -5,13 +5,18 @@ import mysql2 from 'mysql2/promise';
 import dayjs from 'dayjs';
 import Twitter from 'twitter';
 import auth0 from 'auth0';
-import DbUser, { TwitterResponseUser, UserTweet } from '../User.d';
 import UserIDNotFoundError from '../UserIDNotFoundError';
+import User, {
+  CachedUser,
+  TwitterResponseUser,
+  UserWithFriendship,
+} from '../User';
 
 const router = express.Router();
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN ?? 'AUTH0_DOMAIN';
 const AUTH0_FQDN = `https://${AUTH0_DOMAIN}/`;
+const CACHE_TIMEOUT_HOUR = 24; // 名前や表示IDのキャッシュ時間
 
 const DB_SETTING = {
   host: process.env.RDS_HOSTNAME,
@@ -32,8 +37,17 @@ const AUTH0_KEYSET = {
   clientSecret: process.env.CLIENT_SECRET ?? 'CLIENT_SECRET',
 };
 
-async function fetchUserDetail(users: DbUser[]) {
-  if (users.length === 0) return [];
+// ユーザのキャッシュが有効か判定する
+function isUserCacheTimeout(user: CachedUser) {
+  return dayjs(user.cached_at)
+    .add(CACHE_TIMEOUT_HOUR, 'hours')
+    .isBefore(dayjs());
+}
+
+// 引数に与えられたユーザの最新情報をTwitterから取得する
+async function fetchUsers(users: User[]) {
+  if (users.length === 0 || users.length > 100)
+    return new TypeError('users length must be between 1 and 100');
   const client = new Twitter(TWITTER_KEYSET);
   const detailed_users = await client
     .get('users/lookup', {
@@ -46,13 +60,12 @@ async function fetchUserDetail(users: DbUser[]) {
     .catch((e) => {
       console.log(e);
     });
-  if (!detailed_users) throw new Error("couldn't fetch users");
-
+  if (!detailed_users) return new Error("couldn't fetch users");
+  console.log('FETCHED USERS');
   // users配列をidで取れるようにMapに変換
-  const users_map = new Map<string, DbUser>(
+  const users_map = new Map<string, CachedUser>(
     users.map((user) => [user.id, user])
   );
-
   const responce_users = detailed_users.map((user: TwitterResponseUser) => {
     const tweet_user = users_map.get(user.id_str);
     const detailed_user = {
@@ -62,10 +75,66 @@ async function fetchUserDetail(users: DbUser[]) {
       img_url: user.profile_image_url_https,
       content: tweet_user?.content,
       created_at: tweet_user?.created_at,
-    } as UserTweet;
+    } as User;
     return detailed_user;
-  }) as UserTweet[];
+  }) as User[];
   return responce_users;
+}
+
+// キャッシュしたユーザの配列から、必要に応じて最新データに更新したユーザ一覧を返却する
+async function getUsers(users: CachedUser[]) {
+  if (users.length === 0) return new TypeError('Users array cannot be empty');
+  if (
+    // どのユーザも期限切れでなければそのまま返す
+    users.some((user) => !isUserCacheTimeout(user))
+  ) {
+    console.log('use cache');
+    return users;
+  }
+
+  // 返却順を保証するために、何番目がキャッシュを利用するユーザであるか保存しておく
+  const cached_users = [] as User[];
+  const old_users = [] as User[];
+  const user_indexes = [] as ('cache' | 'old')[];
+  users.forEach((user) => {
+    if (isUserCacheTimeout(user)) {
+      old_users.push(user);
+      user_indexes.push('old');
+    } else {
+      cached_users.push(user);
+      user_indexes.push('cache');
+    }
+  });
+
+  // 更新が必要なユーザのみ取得する
+  const latest_users = await fetchUsers(old_users);
+  if (latest_users instanceof Error) {
+    return latest_users;
+  }
+
+  // データベース上のキャッシュを更新する
+  const connection = await mysql2.createConnection(DB_SETTING);
+  await connection.connect();
+  latest_users.forEach((user) =>
+    connection.execute(
+      `UPDATE users SET name=?, screen_name=?, img_url=?, cached_at=now() WHERE id=?`,
+      [user.name, user.screen_name, user.img_url, user.id]
+    )
+  );
+  connection.end();
+
+  // 更新したユーザとキャッシュしたユーザの配列を結合して返す
+  const res_users = [] as User[];
+  for (let i = 0; i < user_indexes.length; i += 1) {
+    if (user_indexes[i] === 'old') {
+      const user = latest_users.shift();
+      if (user) res_users.push(user);
+    } else {
+      const user = cached_users.shift();
+      if (user) res_users.push(user);
+    }
+  }
+  return res_users;
 }
 
 // ユーザを100件取得
@@ -77,9 +146,8 @@ router.get('/', async (req, res) => {
     const [usersArr] = await connection.query(
       `SELECT * FROM users ORDER BY created_at DESC LIMIT 100 OFFSET ${offset}`
     );
-    const users = usersArr as DbUser[];
-
-    const detailed_users = await fetchUserDetail(users);
+    const users = usersArr as User[];
+    const detailed_users = await getUsers(users);
     res.send(detailed_users);
   } catch (error) {
     console.log(error);
@@ -198,7 +266,7 @@ router.get('/search', checkJwt, async (req, res) => {
       return;
     }
     const [users_temp] = result_set;
-    let users = users_temp as DbUser[];
+    let users = users_temp as User[];
 
     // フォローしているユーザ一覧を取得する
     const auth_user = await getAuthUser(req.user.sub);
@@ -231,7 +299,11 @@ router.get('/search', checkJwt, async (req, res) => {
       // フォローしているユーザを除外する場合
       users = users.filter((user) => following_ids.indexOf(user.id) === -1);
 
-    let detailed_users = await fetchUserDetail(users);
+    let detailed_users = await getUsers(users);
+    if (detailed_users instanceof TypeError) {
+      res.status(500).send();
+      return;
+    }
     if (options.excl_names) {
       const { excl_names } = options;
       // 除外するアカウント名が指定されている場合は除外
@@ -242,9 +314,10 @@ router.get('/search', checkJwt, async (req, res) => {
     res.send(
       detailed_users.map((user) => {
         // フォローしているユーザのIDリストに該当しているか、自分自身のアカウントであればフォロー扱いにする
-        const new_user = user;
+        const new_user = user as UserWithFriendship;
         if (following_ids.includes(user.id) || user.id === auth_user.user_id)
           new_user.is_following = true;
+        else new_user.is_following = false;
         return new_user;
       })
     );
