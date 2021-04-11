@@ -1,11 +1,11 @@
-var nodeExternals = require("webpack-node-externals");
+const nodeExternals = require("webpack-node-externals");
 
 module.exports = {
   // モード値を production に設定すると最適化された状態で、
   // development に設定するとソースマップ有効でJSファイルが出力される
   mode: "production",
 
-  //魔法のコード これを書くと Can't resolve 'fs' が消える
+  // 魔法のコード これを書くと Can't resolve 'fs' が消える
   target: "node",
 
   // メインとなるJavaScriptファイル（エントリーポイント）

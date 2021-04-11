@@ -1,6 +1,4 @@
 import dotenv from 'dotenv';
-//envファイルの読み込み
-dotenv.config();
 
 import createError from 'http-errors';
 import Express from 'express';
@@ -10,21 +8,23 @@ import helmet from 'helmet';
 import compression from 'compression';
 
 import usersRouter from './routes/users';
+// envファイルの読み込み
+dotenv.config();
 
 const app = Express();
 
-//ミドルウェア設定
+// ミドルウェア設定
 app.use(logger('dev'));
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN_URL }));
 app.use(Express.json());
 app.use(Express.urlencoded({ extended: true }));
-app.use(compression()); //gzip圧縮して返す
+app.use(compression()); // gzip圧縮して返す
 
-//apiルータへ
+// apiルータへ
 app.use('/users', usersRouter);
 
-//ダミー
+// ダミー
 app.get('/', (req, res) => {
   res.status(200).send('welcome to shizudaisei finder 2 api server');
 });

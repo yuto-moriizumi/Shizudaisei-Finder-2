@@ -1,6 +1,5 @@
-'use strict';
-
-import app from './app';
 import serverless from 'serverless-http';
+import app from './app';
 
-export const myhandler = serverless(app);
+const myhandler = serverless(app);
+export default myhandler;
