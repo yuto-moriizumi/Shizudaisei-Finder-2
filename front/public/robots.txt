@@ -1,3 +1,5 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
+
+Sitemap: https://shizudaisei-finder-2.yuto-moriizumi.net/sitemap.xml
