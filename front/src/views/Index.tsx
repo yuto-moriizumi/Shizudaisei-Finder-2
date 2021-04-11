@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { Button, CardDeck, Container, Jumbotron } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { Helmet } from 'react-helmet-async';
 import User from '../utils/User.d';
 import getResponsiveElements from '../utils/getResponsiveElements';
 
@@ -76,6 +77,13 @@ export default class Index extends React.Component<{}, State> {
     const { users } = this.state;
     return (
       <>
+        <Helmet>
+          <title>静大生発見機 2 トップ</title>
+          <meta
+            name="description"
+            content="静大生のTwitterユーザを簡単に見つけてフォローできるWEBアプリ"
+          />
+        </Helmet>
         <Jumbotron className="text-center">
           <ResTypo
             classes={['h3', 'h1', 'display-4', 'display-2', 'display-1']}

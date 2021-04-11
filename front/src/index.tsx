@@ -1,6 +1,7 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { render } from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import App from './App';
@@ -8,11 +9,13 @@ import Auth0ProviderWithHistory from './components/Auth0ProviderWithHistory';
 // import enableMock from './utils/mockApi';
 
 // enableMock();
-ReactDOM.render(
+render(
   <React.StrictMode>
     <Router>
       <Auth0ProviderWithHistory>
-        <App />
+        <HelmetProvider>
+          <App />
+        </HelmetProvider>
       </Auth0ProviderWithHistory>
     </Router>
   </React.StrictMode>,

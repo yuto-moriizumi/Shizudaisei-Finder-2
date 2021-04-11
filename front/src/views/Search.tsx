@@ -10,6 +10,7 @@ import {
   Spinner,
   Col,
 } from 'react-bootstrap';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import User from '../utils/User.d';
@@ -176,6 +177,13 @@ class Search extends React.Component<Prop, State> {
     } = this.state;
     return (
       <>
+        <Helmet>
+          <title>静大生発見機 2 ユーザ検索</title>
+          <meta
+            name="description"
+            content="静大生のTwitterユーザを検索して、フォローすることができます"
+          />
+        </Helmet>
         <Container className="my-3" fluid="md">
           <h1>検索条件</h1>
           <Form className="my-3">
@@ -219,9 +227,8 @@ class Search extends React.Component<Prop, State> {
               <Form.Label className="my-auto col-2 col-sm-1">学部</Form.Label>
               <Form.Row className="col-10 col-sm-11">
                 {EXCL_KWS.map((kw) => (
-                  <Col xs="auto">
+                  <Col xs="auto" key={kw}>
                     <Form.Check
-                      key={kw}
                       id={`excl_kws${kw}`}
                       inline
                       type="checkbox"
