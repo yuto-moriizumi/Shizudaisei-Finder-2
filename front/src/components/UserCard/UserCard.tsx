@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Col, Row, Image, Button, Container } from 'react-bootstrap';
 import dayjs from 'dayjs';
+import LazyLoad from 'react-lazyload';
 import User from '../../utils/User.d';
 import ButtonState from './ButtonState';
 import FollowingState from './FollowingState';
@@ -31,13 +32,15 @@ export default class UserCard extends React.Component<Props, {}> {
           <Container fluid>
             <Row>
               <Col className="px-0" xs="2">
-                <Image
-                  fluid
-                  src={user.img_url}
-                  style={{ maxHeight: '48px' }}
-                  width="48px"
-                  height="48px"
-                />
+                <LazyLoad height={48}>
+                  <Image
+                    fluid
+                    src={user.img_url}
+                    style={{ maxHeight: '48px' }}
+                    width="48px"
+                    height="48px"
+                  />
+                </LazyLoad>
               </Col>
               <Col className="pl-1 pr-0" xs="10">
                 <Card.Link
