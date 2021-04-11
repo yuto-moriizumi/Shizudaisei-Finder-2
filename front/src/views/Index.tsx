@@ -81,7 +81,7 @@ export default class Index extends React.Component<{}, State> {
           <title>静大生発見機 2 トップ</title>
           <meta
             name="description"
-            content="静大生のTwitterユーザを簡単に見つけてフォローできるWEBアプリ"
+            content="静大生のTwitterユーザを簡単に見つけてフォローできるWEBアプリ。Twitterでログインして、友達をいっぱい作ろう！"
           />
         </Helmet>
         <Jumbotron className="text-center">

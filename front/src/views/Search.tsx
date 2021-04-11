@@ -181,7 +181,7 @@ class Search extends React.Component<Prop, State> {
           <title>静大生発見機 2 ユーザ検索</title>
           <meta
             name="description"
-            content="静大生のTwitterユーザを検索して、フォローすることができます"
+            content="静大生のTwitterユーザを検索して、フォローすることができます。Twitterでログインして、友達をいっぱい作ろう！"
           />
         </Helmet>
         <Container className="my-3" fluid="md">
