@@ -36,6 +36,7 @@ export default class UserCard extends React.Component<Props, {}> {
                   <Image
                     fluid
                     src={user.img_url}
+                    alt={`${user.screen_name}のサムネイル`}
                     style={{ maxHeight: '48px' }}
                     width="48px"
                     height="48px"

@@ -105,6 +105,17 @@ export default class Index extends React.Component<{}, State> {
           >
             管理者用:更新
           </Button> */}
+          <p className="mt-3">
+            ©2021 森泉友登
+            <address>
+              <a href="https://twitter.com/YutoMoriizumi" className="mr-3">
+                Twitter
+              </a>
+              <a href="https://github.com/yuto-moriizumi/Shizudaisei-Finder-2">
+                Github
+              </a>
+            </address>
+          </p>
         </Jumbotron>
         <Container fluid className="px-4 no-gutters">
           <CardDeck>

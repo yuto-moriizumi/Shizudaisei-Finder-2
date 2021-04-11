@@ -55,6 +55,7 @@ class App extends React.Component<Props, {}> {
                     <Nav.Item className="my-auto">
                       <Image
                         src={user.picture}
+                        alt="ログインしたユーザのサムネイル"
                         thumbnail
                         className="img-fluid"
                         style={{ maxHeight: '5vh' }}
