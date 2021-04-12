@@ -10,6 +10,8 @@ services:
     ports:
       - "80:3000"
     environment:
+      REACT_APP_AUTH0_AUDIENCE: $AUTH0_AUDIENCE
+      REACT_APP_AUTH0_DOMAIN: $AUTH0_DOMAIN
       REACT_APP_SERVER_URL: "http://localhost:3000"
   api:
     image: node:14.15.4-buster-slim
@@ -21,16 +23,18 @@ services:
     ports:
       - "3000:3000"
     environment:
+      AUTH0_AUDIENCE: $AUTH0_AUDIENCE
+      AUTH0_CLIENT_ID: $AUTH0_CLIENT_ID
+      AUTH0_CLIENT_SECRET: $AUTH0_CLIENT_SECRET
+      AUTH0_DOMAIN: $AUTH0_DOMAIN
+      CLIENT_ORIGIN_URL: "http://localhost"
       RDS_HOSTNAME: $RDS_HOSTNAME
       RDS_USERNAME: $RDS_USERNAME
       RDS_PASSWORD: $RDS_PASSWORD
       RDS_DB_NAME: "shizudaisei-finder"
-      CLIENT_ORIGIN_URL: "http://localhost"
-      CONSUMER_KEY: $CONSUMER_KEY
-      CONSUMER_SECRET: $CONSUMER_SECRET
-      BEARER_TOKEN: $BEARER_TOKEN
-      CLIENT_ID: $CLIENT_ID
-      CLIENT_SECRET: $CLIENT_SECRET
+      TWITTER_BEARER_TOKEN: $TWITTER_BEARER_TOKEN
+      TWITTER_CONSUMER_KEY: $TWITTER_CONSUMER_KEY
+      TWITTER_CONSUMER_SECRET: $TWITTER_CONSUMER_SECRET
     command: sh -c "yarn install && yarn dev"
     depends_on:
       - db

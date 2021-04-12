@@ -5,7 +5,7 @@ import mysql2 from 'mysql2/promise';
 import dayjs from 'dayjs';
 import Twitter from 'twitter';
 import auth0 from 'auth0';
-import UserIDNotFoundError from '../UserIDNotFoundError';
+import UserIDNotFoundError from '../errors/UserIDNotFoundError';
 import User, {
   CachedUser,
   TwitterResponseUser,
@@ -26,16 +26,17 @@ const DB_SETTING = {
   database: process.env.RDS_DB_NAME,
 };
 const CONSUMER_KEYSET = {
-  consumer_key: process.env.CONSUMER_KEY ?? 'CONSUMER_KEY',
-  consumer_secret: process.env.CONSUMER_SECRET ?? 'CONSUMER_SECRET',
+  consumer_key: process.env.TWITTER_CONSUMER_KEY ?? 'TWITTER_CONSUMER_KEY',
+  consumer_secret:
+    process.env.TWITTER_CONSUMER_SECRET ?? 'TWITTER_CONSUMER_SECRET',
 };
 const TWITTER_KEYSET = {
   ...CONSUMER_KEYSET,
-  bearer_token: process.env.BEARER_TOKEN ?? 'BEARER_TOKEN',
+  bearer_token: process.env.TWITTER_BEARER_TOKEN ?? 'TWITTER_BEARER_TOKEN',
 };
 const AUTH0_KEYSET = {
-  clientId: process.env.CLIENT_ID ?? 'CLIENT_ID',
-  clientSecret: process.env.CLIENT_SECRET ?? 'CLIENT_SECRET',
+  clientId: process.env.AUTH0_CLIENT_ID ?? 'AUTH0_CLIENT_ID',
+  clientSecret: process.env.AUTH0_CLIENT_SECRET ?? 'AUTH0_CLIENT_SECRET',
 };
 
 // ユーザのキャッシュが有効か判定する
@@ -50,33 +51,41 @@ async function fetchUsers(users: User[]) {
   if (users.length === 0 || users.length > 100)
     return new TypeError('users length must be between 1 and 100');
   const client = new Twitter(TWITTER_KEYSET);
-  const detailed_users = await client
-    .get('users/lookup', {
+  try {
+    const ids = users.map((user) => user.id).join(',');
+    console.log(ids);
+
+    const detailed_users = await client.get('users/lookup', {
       user_id: users.map((user) => user.id).join(','),
       include_entities: false,
-    })
-    .catch((e) => {
-      console.log(e);
     });
-  if (!detailed_users) return new Error("couldn't fetch users");
-  console.log('FETCHED USERS');
-  // users配列をidで取れるようにMapに変換
-  const users_map = new Map<string, CachedUser>(
-    users.map((user) => [user.id, user])
-  );
-  const responce_users = detailed_users.map((user: TwitterResponseUser) => {
-    const tweet_user = users_map.get(user.id_str);
-    const detailed_user = {
-      id: user.id_str,
-      name: user.name,
-      screen_name: user.screen_name,
-      img_url: user.profile_image_url_https,
-      content: tweet_user?.content,
-      created_at: tweet_user?.created_at,
-    } as User;
-    return detailed_user;
-  }) as User[];
-  return responce_users;
+    if (!detailed_users) return new Error("couldn't fetch users");
+    console.log('FETCHED USERS');
+    // users配列をidで取れるようにMapに変換
+    const users_map = new Map<string, CachedUser>(
+      users.map((user) => [user.id, user])
+    );
+    const responce_users = detailed_users.map((user: TwitterResponseUser) => {
+      const tweet_user = users_map.get(user.id_str);
+      const detailed_user = {
+        id: user.id_str,
+        name: user.name,
+        screen_name: user.screen_name,
+        img_url: user.profile_image_url_https,
+        content: tweet_user?.content,
+        created_at: tweet_user?.created_at,
+      } as User;
+      return detailed_user;
+    }) as User[];
+    return responce_users;
+  } catch (error) {
+    if (error instanceof Array && error[0].code === 17) {
+      return [];
+    }
+    return new Error(
+      `Unknown twitter error occured at fetchUsers, code:${error[0].code} message:${error[0].message}`
+    );
+  }
 }
 
 // キャッシュしたユーザの配列から、必要に応じて最新データに更新したユーザ一覧を返却する
@@ -84,7 +93,7 @@ async function getUsers(users: CachedUser[]) {
   if (users.length === 0) return new TypeError('Users array cannot be empty');
   if (
     // どのユーザも期限切れでなければそのまま返す
-    users.some((user) => !isUserCacheTimeout(user))
+    !users.some((user) => isUserCacheTimeout(user))
   ) {
     console.log('use cache');
     return users;
@@ -297,9 +306,10 @@ router.get('/search', checkJwt, async (req, res) => {
       // フォローしているユーザを除外する場合
       users = users.filter((user) => following_ids.indexOf(user.id) === -1);
 
-    let detailed_users = await getUsers(users);
+    let detailed_users = await getUsers(users.slice(0, 100)); // 先頭100件に区切る
     if (detailed_users instanceof Error) {
-      res.status(500).send();
+      console.log(detailed_users);
+      res.status(500).send(detailed_users);
       return;
     }
     if (options.excl_names) {
@@ -441,7 +451,7 @@ router.get('/update', async (req, res) => {
       id_str: string;
       name: string;
       text: string;
-      user: { id_str: string; name: string };
+      user: TwitterResponseUser;
       created_at: string;
       retweeted_status?: {};
     }[];
@@ -453,6 +463,8 @@ router.get('/update', async (req, res) => {
         tweet_id: tweet.id_str,
         content: tweet.text,
         created_at: dayjs(tweet.created_at).format('YYYY-MM-DD HH:mm:ss'),
+        screen_name: tweet.user.screen_name,
+        img_url: tweet.user.profile_image_url_https,
       }));
 
     // DBに登録
@@ -463,11 +475,14 @@ router.get('/update', async (req, res) => {
     const error = [] as {}[];
     users.forEach((user) => {
       connection
-        .execute('INSERT users VALUES (?, ?, ?, ?)', [
+        .execute('INSERT users VALUES (?, ?, ?, ?, ?, ?, ?, now())', [
           user.id,
           user.tweet_id,
           user.content,
           user.created_at,
+          user.name,
+          user.screen_name,
+          user.img_url,
         ])
         .then(() => {
           // console.log("success", { user_id: user.id, name: user.name });
