@@ -249,7 +249,8 @@ router.get('/search', checkJwt, async (req, res) => {
     await connection.connect();
 
     // クエリを構築する
-    let QUERY = 'SELECT * FROM users WHERE created_at BETWEEN ? AND ?';
+    let QUERY =
+      'SELECT * FROM users WHERE is_black = 0 AND created_at BETWEEN ? AND ?';
     if (options.excl_kws)
       // 除外キーワードが指定されている場合は除外
       QUERY += ` AND NOT content REGEXP('${options.excl_kws
