@@ -476,7 +476,7 @@ router.get('/update', async (req, res) => {
     const error = [] as {}[];
     users.forEach((user) => {
       connection
-        .execute('INSERT users VALUES (?, ?, ?, ?, ?, ?, ?, now())', [
+        .execute('INSERT users VALUES (?, ?, ?, ?, ?, ?, ?, now(), 0)', [
           user.id,
           user.tweet_id,
           user.content,
