@@ -288,6 +288,12 @@ router.get('/search', checkJwt, async (req, res) => {
       return;
     }
 
+    console.log({
+      ...CONSUMER_KEYSET,
+      access_token_key: auth_user.access_token ?? 'ACCESS_TOKEN_KEY',
+      access_token_secret: auth_user.access_token_secret ?? 'ACCESS_TOKEN_KEY',
+    });
+
     // Twitterインスタンス化
     const client = new Twitter({
       ...CONSUMER_KEYSET,
@@ -301,11 +307,17 @@ router.get('/search', checkJwt, async (req, res) => {
       count: 5000,
       stringify_ids: true,
     });
+    const outgoings = await client.get('friendships/outgoing', {
+      stringify_ids: true,
+    });
     const following_ids = followings.ids as Array<string>;
+    const outgoing_ids = outgoings.ids as Array<string>;
 
     if (options.incl_flw === 'false')
-      // フォローしているユーザを除外する場合
-      users = users.filter((user) => following_ids.indexOf(user.id) === -1);
+      // フォローしているユーザを除外する場合、フォロー中のユーザとフォローリクエスト中のユーザを除外する
+      users = users
+        .filter((user) => !following_ids.includes(user.id))
+        .filter((user) => !outgoing_ids.includes(user.id));
 
     let detailed_users = await getUsers(users.slice(0, 100)); // 先頭100件に区切る
     if (detailed_users instanceof Error) {
@@ -322,9 +334,13 @@ router.get('/search', checkJwt, async (req, res) => {
     }
     res.send(
       detailed_users.map((user) => {
-        // フォローしているユーザのIDリストに該当しているか、自分自身のアカウントであればフォロー扱いにする
+        // フォローしているユーザのIDリストに該当しているか、フォローリクエスト中であるか、自分自身のアカウントであればフォロー扱いにする
         const new_user = user as UserWithFriendship;
-        if (following_ids.includes(user.id) || user.id === auth_user.user_id)
+        if (
+          following_ids.includes(user.id) ||
+          outgoing_ids.includes(user.id) ||
+          user.id === auth_user.user_id
+        )
           new_user.is_following = true;
         else new_user.is_following = false;
         return new_user;
